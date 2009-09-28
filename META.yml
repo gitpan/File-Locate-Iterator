@@ -1,0 +1,53 @@
+--- #YAML:1.0
+name:               File-Locate-Iterator
+version:            1
+abstract:           Read "locate" database file with an iterator.
+author:
+    - Kevin Ryde <user42@zip.com.au>
+license:            gpl
+distribution_type:  module
+configure_requires:
+    ExtUtils::MakeMaker:  0
+build_requires:
+    ExtUtils::MakeMaker:  0
+requires:
+    perl:        5.006
+    Test::More:  0
+resources:
+    homepage:  http://user42.tuxfamily.org/file-locate-iterator/index.html
+    license:   http://www.gnu.org/licenses/gpl.html
+no_index:
+    directory:
+        - t
+        - inc
+        - devel
+generated_by:       ExtUtils::MakeMaker version 6.55_02
+meta-spec:
+    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
+    version:  1.4
+optional_features:
+    maximum_devel:
+        description:  Stuff used various for development.
+        requires:
+            Devel::TimeThis:  0
+    maximum_examples:
+        description:  Be able to run all the examples programs.
+        requires:
+            Iterator:          0
+            Iterator::Simple:  0
+    maximum_interoperation:
+        description:  Have maximum inter-operation with other modules (optional supported other stuff).
+        requires:
+            Iterator:          0
+            Iterator::Simple:  0
+    maximum_tests:
+        description:  Have "make test" do as much as possible.
+        requires:
+            Parse::CPAN::Meta:   0
+            Test::DistManifest:  0
+            Test::NoWarnings:    0
+            Test::Pod:           1.00
+            YAML:                0
+            YAML::Syck:          0
+            YAML::Tiny:          0
+            YAML::XS:            0
