@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License along
 # with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
+use 5.006;
 use strict;
 use warnings;
 use Devel::TimeThis;

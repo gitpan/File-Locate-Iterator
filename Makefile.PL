@@ -62,7 +62,7 @@ MyMakeMakerExtras::WriteMakefile
                               },
                 },
              maximum_devel
-             => { description => 'Stuff used various for development.',
+             => { description => 'Stuff used variously for development.',
                   requires => { 'Devel::TimeThis' => 0,
                               },
                 },

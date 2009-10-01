@@ -25,7 +25,7 @@ use File::Locate::Iterator;
 use base 'Iterator';
 use vars qw($VERSION);
 
-$VERSION = 1;
+$VERSION = 2;
 
 sub new {
   my $class = shift;

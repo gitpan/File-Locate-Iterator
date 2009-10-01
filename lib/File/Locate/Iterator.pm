@@ -24,7 +24,7 @@ use warnings;
 use Carp;
 use vars ('$VERSION', '@ISA');
 
-$VERSION = 1;
+$VERSION = 2;
 
 use constant DEBUG => 0;
 
@@ -63,7 +63,7 @@ sub new {
       my $file = (defined $options{'database_file'}
                   ? $options{'database_file'}
                   : $class->default_database_file);
-
+      if (DEBUG) { print "open database_file $file\n"; }
       open $fh, '<', $file
         or die "Cannot open $file: $!";
     }
@@ -287,7 +287,7 @@ sub _glob_to_regex_string {
             |\\(.)                  # $2 backslashed
             |(\W)}{                 # $3 other non-plain
     (defined $1   ? ($saw_wild = _glob_char_class_to_regex($1))
-     : defined $2 ? do { print "backslash $2\n"; quotemeta($2) }
+     : defined $2 ? quotemeta($2)
      : $3 eq '?'  ? ($saw_wild = '.')
      : $3 eq '*'  ? ($saw_wild = '.*')
      : quotemeta($3))
@@ -312,7 +312,8 @@ sub _glob_char_class_to_regex {
 
 
 package File::Locate::Iterator::FileMap;
-use File::Map;
+use strict;
+use warnings;
 use Scalar::Util;
 use constant DEBUG => 0;
 our %cache;
@@ -324,8 +325,10 @@ sub get {
   my $key = "$dev,$ino,$size";
   if (DEBUG) { print "FileMap get $fh, key=$key, size ",-s $fh,"\n"; }
   return ($cache{$key} || do {
+    require File::Map;
     my $self = bless { key => $key }, $class;
-    File::Map::map_handle ($self->{'mmap'}, $fh);
+    # explicit \$foo since no prototype when only "require File::Map"
+    File::Map::map_handle (\$self->{'mmap'}, $fh);
     Scalar::Util::weaken ($cache{$key} = $self);
     $self;
   });

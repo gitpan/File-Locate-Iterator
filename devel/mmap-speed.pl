@@ -23,9 +23,6 @@ use strict;
 use warnings;
 use Devel::TimeThis;
 use Devel::Peek;
-use FindBin;
-use blib '/home/gg/perl/mmap/Sys-Mmap-0.13/blib';
-# use lib::abs $FindBin::Bin;
 
 use Sys::Mmap ();
 use File::Map ();

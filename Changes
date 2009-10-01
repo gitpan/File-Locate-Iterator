@@ -17,5 +17,8 @@ with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 2, October 2009
+    - oops, File::Map supposed to be optional (and undocumented yet)
+
 Version 1, September 2009
     - the first version

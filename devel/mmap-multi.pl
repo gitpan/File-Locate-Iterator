@@ -18,6 +18,7 @@
 # with File-Locate-Iterator; see the file COPYING.  Failing that, go to
 # <http://www.gnu.org/licenses/>.
 
+use 5.006;
 use strict;
 use warnings;
 use Devel::TimeThis;

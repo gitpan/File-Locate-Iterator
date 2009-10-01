@@ -129,6 +129,9 @@ MY_MUNGHTML = \
       -e 's!http://search.cpan.org/perldoc[?]apt-file!http://packages.debian.org/apt-file!'
 
 HERE
+  if (my $munghtml_extra = $makemaker->{'MY_MUNGHTML_EXTRA'}) {
+    $post =~ s/apt-file!'/apt-file!'\n$munghtml_extra/;
+  }
 
   my @pmfiles = keys %{$makemaker->{'PM'}};
   my @exefiles = (defined $makemaker->{'EXE_FILES'}

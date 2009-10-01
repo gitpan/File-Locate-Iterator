@@ -18,6 +18,8 @@
 # with File-Locate-Iterator; see the file COPYING.  Failing that, go to
 # <http://www.gnu.org/licenses/>.
 
+use strict;
+use warnings;
 
 chdir '/tmp' or die;
 system 'echo hi >_';

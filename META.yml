@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Locate-Iterator
-version:            1
+version:            2
 abstract:           Read "locate" database file with an iterator.
 author:
     - Kevin Ryde <user42@zip.com.au>
@@ -27,7 +27,7 @@ meta-spec:
     version:  1.4
 optional_features:
     maximum_devel:
-        description:  Stuff used various for development.
+        description:  Stuff used variously for development.
         requires:
             Devel::TimeThis:  0
     maximum_examples:

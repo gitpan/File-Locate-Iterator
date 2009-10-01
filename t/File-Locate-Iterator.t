@@ -21,12 +21,12 @@ use 5.006;
 use strict;
 use warnings;
 use File::Locate::Iterator;
-use Test::More tests => 69;
+use Test::More tests => 68;
 
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 1;
+my $want_version = 2;
 cmp_ok ($File::Locate::Iterator::VERSION, '>=', $want_version,
         'VERSION variable');
 cmp_ok (File::Locate::Iterator->VERSION,  '>=', $want_version,
@@ -49,6 +49,7 @@ foreach my $elem (['.pm',        '\\.pm'],
                   ['[!abc].pm', '^[^abc]\\.pm$'],
                   ['[a*c].pm',   '^[a*c]\\.pm$'],
                  ) {
+  ## no critic (ProtectPrivateSubs)
   my ($glob, $want) = @$elem;
   my $got = File::Locate::Iterator::_glob_to_regex_string($glob);
   is ($got, $want, "glob: $glob");
@@ -62,7 +63,7 @@ sub slurp_lines {
   open my $fh, '<', $filename or die "Cannot open $filename: $!";
   my @ret = <$fh>;
   close $fh or die "Error reading $filename: $!";
-  foreach (@ret) { chomp };
+  foreach (@ret) { chomp }
   return @ret;
 }
 require FindBin;
@@ -210,15 +211,15 @@ diag "samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
 #-----------------------------------------------------------------------------
 # mmap caching
 
-{
+SKIP: {
   my $it1 = File::Locate::Iterator->new (database_file => $samp_locatedb,
                                          use_mmap => 'if_possible');
   my $it2 = File::Locate::Iterator->new (database_file => $samp_locatedb,
                                          use_mmap => 'if_possible');
-  cmp_ok ($it1->{'fm'}, '==', $it2->{'fm'}, 'FileMap re-used');
-  my $mmap_used = ($it1->{'fm'} ? 'yes' : 'no');
-  is ($it1->{'fm'}, $it2->{'fm'},
-      "FileMap re-used (mmap used $mmap_used)");
+  ($it1->_using_mmap && $it2->_using_mmap)
+    or skip 'mmap "if_possible" not used', 2;
+
+  is ($it1->{'fm'}, $it2->{'fm'}, "FileMap re-used");
   my $fm = $it1->{'fm'};
   Scalar::Util::weaken ($fm);
   undef $it1;
