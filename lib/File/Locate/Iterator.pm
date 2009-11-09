@@ -22,9 +22,13 @@ use 5.006;  # for qr//, and open anon handles
 use strict;
 use warnings;
 use Carp;
+use File::FnMatch;
+use List::Util;
 use vars ('$VERSION', '@ISA');
 
-$VERSION = 2;
+BEGIN {
+  $VERSION = 3;
+}
 
 use constant DEBUG => 0;
 
@@ -32,6 +36,7 @@ use constant default_database_file => '/var/cache/locate/locatedb';
 use constant default_use_mmap      => 0;
 
 use constant _HEADER => "\0LOCATE02\0";
+use constant _TRUE => 1;
 
 sub new {
   my ($class, %options) = @_;
@@ -42,17 +47,33 @@ sub new {
                       @{$options{'suffixes'}}) {
     push @regexps, quotemeta($suffix) . '$';
   }
-  foreach my $glob (defined $options{'glob'} ? $options{'glob'} : (),
-                    @{$options{'globs'}}) {
-    push @regexps, _glob_to_regex_string($glob);
-  }
-  my $re = join ('|', @regexps);
-  $re = qr/$re/;
 
-  my $self = bless { regexp   => $re,
-                     entry    => '',
+  # as per findutils locate.c locate() function, pattern with * ? or [ is a
+  # glob, anything else is a literal match
+  #
+  my @globs = (defined $options{'glob'} ? $options{'glob'} : (),
+               @{$options{'globs'} || []});
+  @globs = grep { ($_ =~ /[[*?]/
+                   || do { push @regexps, quotemeta($_); 0 })
+                } @globs;
+
+  my $self = bless { entry    => '',
                      sharelen => 0,
                    }, $class;
+
+  if (@regexps) {
+    my $regexp = join ('|', @regexps);
+    $self->{'regexp'} = qr/$regexp/s;
+  }
+  if (@globs) {
+    $self->{'globs'} = \@globs;
+  }
+
+  if (DEBUG) { print "regexp ",
+                 (defined $self->{'regexp'} ? $self->{'regexp'} : 'undef'),
+                   " globs ",
+                     (defined $self->{'globs'} ? @{$self->{globs}} : 'undef'),
+                       "\n"; }
 
   if (defined (my $str = $options{'database_str'})) {
     $self->{'mref'} = \$str;
@@ -142,11 +163,13 @@ BEGIN {
 
       my $sharelen = $self->{'sharelen'};
       my $entry = $self->{'entry'};
+      my $regexp = $self->{'regexp'};
+      my $globs = $self->{'globs'};
 
       if (exists $self->{'mref'}) {
         my $mref = $self->{'mref'};
         my $pos = $self->{'pos'};
-        for (;;) {
+      MREF_LOOP: for (;;) {
           if (DEBUG >= 2) { printf "pos %#X\n", $pos; }
           if ($pos >= length ($$mref)) {
             undef $self->{'entry'};
@@ -185,13 +208,20 @@ BEGIN {
           # print "$pos to $end\n";
           if ($end < 0) { goto UNEXPECTED_EOF; }
 
-          my $part = substr ($$mref, $pos, $end-$pos);
-          # print "part '$part'\n";
           $entry = (substr($entry,0,$sharelen)
                     . substr ($$mref, $pos, $end-$pos));
           $pos = $end + 1;
 
-          last if $entry =~ $self->{'regexp'};
+          if ($regexp) {
+            last if $entry =~ $regexp;
+          } elsif (! $globs) {
+            last;
+          }
+          if ($globs) {
+            foreach my $glob (@$globs) {
+              last MREF_LOOP if File::FnMatch::fnmatch($glob,$entry)
+          }
+        }
         }
         $self->{'pos'} = $pos;
 
@@ -200,7 +230,7 @@ BEGIN {
 
         my $fh = $self->{'fh'};
         if (DEBUG) { printf "pos %#x\n",tell($fh); }
-        for (;;) {
+      IO_LOOP: for (;;) {
           my $adjshare;
           unless (my $got = read $fh, $adjshare, 1) {
             if (defined $got) {
@@ -218,8 +248,8 @@ BEGIN {
             if (! defined $got) { goto ERROR_READING; }
             if ($got != 2) { goto UNEXPECTED_EOF; }
 
-            # for perl 5.10 up could use 's>' for signed 16-bit big-endian pack,
-            # instead of getting unsigned and stepping down
+            # for perl 5.10 up could use 's>' for signed 16-bit big-endian
+            # pack, instead of getting unsigned and stepping down
             ($adjshare) = unpack 'n', $adjshare;
             if ($adjshare >= 32768) { $adjshare -= 65536; }
           }
@@ -233,13 +263,11 @@ BEGIN {
 
           my $part;
           {
-            # the perlfunc docs for readline() say you can clear $! then check
-            # it afterwards for an error indication, but in perl 5.10.0 $! seems
-            # to be set to EBADF when there's a read into the buffer on $fh,
-            # which is when the readline crosses into a new 1024 byte block.
-            #
-            # undef $!;
-            # if ($!) { goto ERROR_READING; }
+            # perlfunc.pod of 5.10.0 for readline() says you can clear $!
+            # then check it afterwards for an error indication, but that's
+            # wrong, $! ends up set to EBADF when filling the PerlIO buffer,
+            # which means if the readline crosses a 1024 byte boundary
+            # (something in attempting a fast gets then falling back ...)
 
             $part = readline $fh;
             if (! defined $part) { goto UNEXPECTED_EOF; }
@@ -250,7 +278,16 @@ BEGIN {
 
           $entry = substr($entry,0,$sharelen) . $part;
 
-          last if $entry =~ $self->{'regexp'};
+          if ($regexp) {
+            last if $entry =~ $regexp;
+          } elsif (! $globs) {
+            last;
+          }
+          if ($globs) {
+            foreach my $glob (@$globs) {
+              last IO_LOOP if File::FnMatch::fnmatch($glob,$entry)
+          }
+        }
         }
       }
 
@@ -272,45 +309,6 @@ sub _current {
   return $self->{'entry'};
 }
 
-# Per info node "(find)Shell Pattern Matching", not the same as Text::Glob.
-#     *             -- 0 or more chars, including /
-#     ?             -- 1 char, including /
-#     [abc]         -- char class
-#     [^abc],[!abc] -- negated char class
-#     \             -- remove special meaning, incl in char class
-#
-sub _glob_to_regex_string {
-  my ($str) = @_;
-  my $saw_wild;
-
-  $str =~ s{(\[(?:\\.|[^\\\]])*\])  # $1 char class
-            |\\(.)                  # $2 backslashed
-            |(\W)}{                 # $3 other non-plain
-    (defined $1   ? ($saw_wild = _glob_char_class_to_regex($1))
-     : defined $2 ? quotemeta($2)
-     : $3 eq '?'  ? ($saw_wild = '.')
-     : $3 eq '*'  ? ($saw_wild = '.*')
-     : quotemeta($3))
-      }xsge;
-
-  # any wildcard in the pattern means anchor to start and end
-  if (defined $saw_wild) {
-    $str = '^'.$str.'$';
-  }
-  # but can optimize away leading "^.*" or trailing ".*$" anything at start/end
-  $str =~ s/^\^(\.\*)+//;
-  $str =~ s/(\.\*)+\$$//;
-
-  return $str;
-}
-sub _glob_char_class_to_regex {
-  my ($str) = @_;
-  $str =~ s/^\[!/[^/;    # [! negation -> [^
-  $str =~ s/\\(\w)/$1/g; # \ backslashed word char -> unbackslashed literal
-  return $str;
-}
-
-
 package File::Locate::Iterator::FileMap;
 use strict;
 use warnings;
@@ -321,7 +319,7 @@ our %cache;
 sub get {
   my ($class, $fh) = @_;
 
-  my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size) = stat ($fh);
+  my ($dev, $ino, undef, undef, undef, undef, undef, $size) = stat ($fh);
   my $key = "$dev,$ino,$size";
   if (DEBUG) { print "FileMap get $fh, key=$key, size ",-s $fh,"\n"; }
   return ($cache{$key} || do {
@@ -383,16 +381,16 @@ Each C<next()> call on the iterator returns the next entry from the
 database.
 
 Locate databases normally hold filenames, as a way of finding files faster
-than churning through all directories.  Optional glob, suffix and regexp
-options on the iterator let you restrict the entries returned.
+than churning through directories on the filesystem.  Optional glob, suffix
+and regexp options on the iterator let you restrict the entries returned.
 
-Only "LOCATE02" files are supported, per current versions of GNU C<locate>,
-not the "slocate" format.
+Only "LOCATE02" format files are supported per current versions of GNU
+C<locate>, not the "slocate" format.
 
-The iterators from this module are stand-alone, they don't need any of the
-various iterator module frameworks.  See L<Iterator::Locate> or
-L<Iterator::Simple::Locate> to inter-operate with those frameworks.  They
-have the advantage of various convenient ways to grep, map or manipulate the
+Iterators from this module are stand-alone, they don't need any of the
+various iterator frameworks, but see L<Iterator::Locate> or
+L<Iterator::Simple::Locate> for inter-operating with those.  The frameworks
+have the advantage of convenient ways to grep, map or manipulate the
 iterated sequence.
 
 =head1 FUNCTIONS
@@ -401,8 +399,8 @@ iterated sequence.
 
 =item C<< $it = File::Locate::Iterator->new (key=>value,...) >>
 
-Create and return a new locate iterator object.  The following following
-optional key/value pairs are available,
+Create and return a new locate database iterator object.  The following
+following optional key/value pairs are available,
 
 =over 4
 
@@ -410,11 +408,14 @@ optional key/value pairs are available,
 
 =item C<database_fh>
 
-The file to read, either by filename or file handle.  The default is per
-C<default_database_file> below, usually F</var/cache/locate/locatedb>.
+The file to read, either as filename or file handle.  The default is the
+C<default_database_file> below.
 
     $it = File::Locate::Iterator->new
             (database_file => '/foo/bar.db');
+
+A filehandle is read with the usual Perl I/O so it can come from anywhere.
+It should generally be in binary mode (see C<perlio>).
 
 =item C<suffix> (string)
 
@@ -426,28 +427,29 @@ C<default_database_file> below, usually F</var/cache/locate/locatedb>.
 
 =item C<regexp> (string or regexp object)
 
-=item C<regexps> (arrayref of string)
+=item C<regexps> (arrayref of strings or regexp objects)
 
-Restrict the entries returned to those of given suffix(es) or matching the
+Restrict the entries returned to those with given suffix(es) or matching the
 given glob(s) or regexp(s).  For example,
 
-    # C code files on the system
+    # C code files on the system, .c and .h
     $it = File::Locate::Iterator->new
             (suffixes => ['.c','.h']);
 
-Globs are in the style of the C<locate> program, which means "*" for zero or
-more chars (including slashes), "?" for one char, "[abc]" char classes and
-"[^abc]" or "[!abc]" negated classes.  Backslash "\" escapes any char.  A
-pattern without wildcards matches anywhere, but with any wildcard it's
-anchored to start and end (use leading or trailing "*" to avoid that).
+If multiple patterns or suffixes are given then matches of any are returned.
+
+Globs are in the style of the C<locate> program, which means C<fnmatch> with
+no options (see L<File::FnMatch>) and the pattern must match the full entry,
+except for a fixed string (none of "*", "?" or "[") which can match
+anywhere.
 
 =back
 
 =item C<< $entry = $it->next >>
 
-Return the next entry from the database, or an empty list at end of file.
-Recall that an empty list return means C<undef> in scalar context or no
-values in array context.  So you can loop with either
+Return the next entry from the database, or no values at end of file.
+Recall that an empty return means C<undef> in scalar context or no values in
+array context so you can loop with either
 
     while (defined (my $filename = $it->next)) ...
 
@@ -455,11 +457,16 @@ or
 
     while (my ($filename) = $it->next) ...
 
+The return is a byte string, since it's normally a filename and as of Perl
+5.10 filenames are handled as byte strings.
+
 =item C<< $filename = File::Locate::Iterator->default_database_file >>
 
-Return the default database file used in C<new> above.  Currently this is
-always F</var/cache/locate/locatedb>, though the intention is to make it the
-system default, if that can be found easily.
+Return the default database file used in C<new> above.  This is intended to
+be the same as the C<locate> program uses.  Currently this means
+F</var/cache/locate/locatedb>, but in the future it may be possible to check
+how C<findutils> has been configured, or maybe even to follow
+C<LOCATE_PATH>.
 
 =back
 
@@ -473,29 +480,27 @@ Default locate database.
 
 =back
 
-=head1 OTHER WAYS
+=head1 OTHER WAYS TO DO IT
 
-The plain C<File::Locate> reads a locate database with callbacks.  Whether
-you prefer callbacks or an iterator is a matter of style.  Iterators let you
-write your own loop, and you can have a few of searches on the go
-simultaneously.
+C<File::Locate> reads a locate database with callbacks.  Whether you prefer
+callbacks or an iterator is a matter of style.  Iterators let you write your
+own loop and you can have a few of searches on the go simultaneously.
 
-Iterators are also good for cooperative coroutining like C<POE> or C<Gtk>
-where you must hold state in some sort of variable, to be progressed by
-callbacks from the main loop.  (Note that C<next> will block reading from
+Iterators are good for cooperative coroutining like C<POE> or C<Gtk> where
+you must hold your state in some sort of variable, to be progressed by
+callbacks from the main loop.  (Note that C<next()> will block reading from
 the database, so the database generally should be a plain file rather than a
 socket or something, so as not to hold up a main loop.)
 
 =head1 SEE ALSO
 
 L<File::Locate>, L<Iterator::Locate>, L<Iterator::Simple::Locate>,
-C<locate(1)> and the GNU Findutils manual
+C<locate(1)> and the GNU Findutils manual, L<File::FnMatch>
 
 =head1 FUTURE
 
-The current implementation is pure-Perl and for that reason isn't very fast.
-Some XS (in progress) should make it as fast as C<File::Locate> in the
-future.
+The current implementation is pure-Perl and isn't particularly fast.  Some
+XS (in progress) should make it as fast as C<File::Locate> in the future.
 
 Currently each C<File::Locate::Iterator> holds a separate open handle on the
 database, which means a file descriptor and buffering per iterator.  In the
@@ -504,14 +509,9 @@ requirements.
 
 Sharing an open handle between iterators with each seeking to its desired
 position would be possible, but a seek drops buffered data and so would go
-slower than ever.  There's some secret undocumented mmap code in progress
-which should be both small and fast, when an mmap is possible, and isn't so
-huge as to eat up all your address space.
-
-Glob patterns are converted to Perl regexps for matching.  It might be worth
-making that public or splitting it out.  It's slightly different from what
-C<Text::Glob> does.  (If you want shell globs then convert with
-C<Text::Glob> and pass as regexps to C<new> above.)
+slower than ever.  There's some secret undocumented C<mmap> code in progress
+which should be both small and fast, when an C<mmap> is possible, and isn't
+so huge as to eat up all your address space.
 
 =head1 HOME PAGE
 

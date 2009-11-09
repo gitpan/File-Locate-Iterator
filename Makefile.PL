@@ -30,7 +30,9 @@ MyMakeMakerExtras::WriteMakefile
    VERSION_FROM => 'lib/File/Locate/Iterator.pm',
    MIN_PERL_VERSION => '5.006',
    PREREQ_PM    => {
-                    'Test::More' => 0,
+                    'File::FnMatch' => 0,
+                    'List::Util'    => 0,
+                    'Test::More'    => 0,
                    },
 
    AUTHOR       => 'Kevin Ryde <user42@zip.com.au>',
@@ -38,8 +40,7 @@ MyMakeMakerExtras::WriteMakefile
    SIGN         => 1,
 
    META_MERGE
-   => { no_index => { directory => [ 'devel' ] },
-        resources
+   => { resources
         => { homepage
              => 'http://user42.tuxfamily.org/file-locate-iterator/index.html',
            },

@@ -17,6 +17,9 @@ with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 3, November 2009
+    - use File::FnMatch for globs (rather than converting to a regexp)
+
 Version 2, October 2009
     - oops, File::Map supposed to be optional (and undocumented yet)
 

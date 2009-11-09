@@ -6,7 +6,9 @@ debian/control
 debian/copyright
 debian/rules
 debian/watch
+devel/balanced.pl
 devel/glob.pl
+devel/GlobRegexp.pm
 devel/iterator-simple.pl
 devel/iterator.pl
 devel/Iterator.xs

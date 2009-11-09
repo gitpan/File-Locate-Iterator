@@ -21,12 +21,12 @@ use 5.006;
 use strict;
 use warnings;
 use File::Locate::Iterator;
-use Test::More tests => 68;
+use Test::More tests => 64;
 
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 2;
+my $want_version = 3;
 cmp_ok ($File::Locate::Iterator::VERSION, '>=', $want_version,
         'VERSION variable');
 cmp_ok (File::Locate::Iterator->VERSION,  '>=', $want_version,
@@ -39,24 +39,15 @@ cmp_ok (File::Locate::Iterator->VERSION,  '>=', $want_version,
 }
 
 #-----------------------------------------------------------------------------
-# _glob_to_regex_string()
-
-foreach my $elem (['.pm',        '\\.pm'],
-                  ['*.pm',       '\\.pm$'],
-                  ['\\?.pm',  '\\?\\.pm'],
-                  ['[abc].pm',   '^[abc]\\.pm$'],
-                  ['[^abc].pm', '^[^abc]\\.pm$'],
-                  ['[!abc].pm', '^[^abc]\\.pm$'],
-                  ['[a*c].pm',   '^[a*c]\\.pm$'],
-                 ) {
-  ## no critic (ProtectPrivateSubs)
-  my ($glob, $want) = @$elem;
-  my $got = File::Locate::Iterator::_glob_to_regex_string($glob);
-  is ($got, $want, "glob: $glob");
-}
-
-#-----------------------------------------------------------------------------
 # samp.txt / samp.locatedb
+
+sub no_inf_loop {
+  my ($name) = @_;
+  my $count = 0;
+  return sub {
+    if ($count++ > 20) { die "Oops, eof not reached on $name"; }
+  };
+}
 
 sub slurp_lines {
   my ($filename) = @_;
@@ -70,32 +61,81 @@ require FindBin;
 require File::Spec;
 my $samp_txt      = File::Spec->catfile ($FindBin::Bin, 'samp.txt');
 my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
-diag "samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
+diag "Test samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
 {
-  my @want = slurp_lines ($samp_txt);
+  my @samp_txt = slurp_lines ($samp_txt);
   my $orig_RS = $/;
+
   {
     my $it = File::Locate::Iterator->new (database_file => $samp_locatedb);
-    my $count;
+    my @want = @samp_txt;
     my @got;
+    my $noinfloop = no_inf_loop($samp_locatedb);
     while (defined (my $filename = $it->next)) {
       push @got, $filename;
-      if ($count++ > 20) { die "Oops, eof not reached on $samp_locatedb"; }
+      $noinfloop->();
     }
     is_deeply (\@got, \@want, 'samp.locatedb');
   }
+
+  # with 'glob'
+  {
+    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
+                                          glob => '*.c');
+    my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
+    my @want = grep {/\.c$/} @samp_txt;
+    my @got;
+    while (defined (my $filename = $it->next)) {
+      push @got, $filename;
+      $noinfloop->();
+    }
+    is_deeply (\@got, \@want, 'samp.locatedb');
+  }
+
+  # with 'regexp'
+  {
+    my $regexp = qr{^/usr/tmp};
+    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
+                                          regexp => $regexp);
+    my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
+    my @want = grep {/$regexp/} @samp_txt;
+    my @got;
+    while (defined (my $filename = $it->next)) {
+      push @got, $filename;
+      $noinfloop->();
+    }
+    is_deeply (\@got, \@want, 'samp.locatedb');
+  }
+
+  # with 'glob' and 'regexp'
+  {
+    my $regexp = qr{^/usr/tmp};
+    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
+                                          regexp => $regexp,
+                                          glob => '*.c');
+    my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
+    my @want = grep {/$regexp|\.c$/} @samp_txt;
+    my @got;
+    while (defined (my $filename = $it->next)) {
+      push @got, $filename;
+      $noinfloop->();
+    }
+    is_deeply (\@got, \@want, 'samp.locatedb');
+  }
+
   foreach my $use_mmap (0, 'if_sensible', 'if_possible') {
     my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
                                           use_mmap => $use_mmap);
+    my $noinfloop = no_inf_loop("$samp_locatedb with use_mmap=$use_mmap it="
+                                . explain $it);
+    my @want = @samp_txt;
     my @got;
-    my $count;
     while (my ($filename) = $it->next) {
       push @got, $filename;
-      if ($count++ > 20) {
-        die "Oops, eof not reached on $samp_locatedb with use_mmap=$use_mmap it=", explain $it;
-      }
+      $noinfloop->();
     }
-    is_deeply (\@got, \@want, "samp.locatedb  use_mmap=$use_mmap using_mmap=@{[$it->_using_mmap]}");
+    is_deeply (\@got, \@want,
+               "samp.locatedb  use_mmap=$use_mmap using_mmap=@{[$it->_using_mmap]}");
   }
   is ($/, $orig_RS, 'input record separator unchanged');
 }
@@ -105,6 +145,7 @@ diag "samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
 
 {
   package MyFileRemover;
+  # remove $filename when the "remover" object goes out of scope.
   sub new {
     my ($class, $filename) = @_;
     return bless { filename => $filename }, $class;

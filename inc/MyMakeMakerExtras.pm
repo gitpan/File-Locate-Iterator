@@ -20,16 +20,24 @@
 package MyMakeMakerExtras;
 use strict;
 use warnings;
-use File::Basename;
 
-use constant DEBUG => 0;
+sub DEBUG () { 0 };
 
 sub WriteMakefile {
   my %opts = @_;
 
-  $opts{'META_MERGE'}->{'resources'}->{'license'} ||=
-    'http://www.gnu.org/licenses/gpl.html';
-  _meta_merge_shared_tests (\%opts);
+  if (exists $opts{'META_MERGE'}) {
+    # cf. ExtUtils::MM_Any::metafile_data() default ['t','inc']
+    foreach my $dir ('devel', 'examples', 'junk', 'maybe') {
+      if (-d $dir) {
+        push @{$opts{'META_MERGE'}->{'no_index'}->{'directory'}}, $dir;
+      }
+    }
+
+    $opts{'META_MERGE'}->{'resources'}->{'license'} ||=
+      'http://www.gnu.org/licenses/gpl.html';
+    _meta_merge_shared_tests (\%opts);
+  }
 
   push @{$opts{'clean'}->{'FILES'}},     'temp-lintian';
   push @{$opts{'realclean'}->{'FILES'}}, 'TAGS';
@@ -114,8 +122,10 @@ sub postamble {
     require Data::Dumper;
     print Data::Dumper::Dumper($makemaker);
   }
+  my $post = '';
 
-  my $post = <<'HERE';
+  unless ($makemaker->{'MY_NO_HTML'}) {
+    $post .= <<'HERE';
 
 #------------------------------------------------------------------------------
 # docs stuff -- from inc/MyMakeMakerExtras.pm
@@ -129,31 +139,36 @@ MY_MUNGHTML = \
       -e 's!http://search.cpan.org/perldoc[?]apt-file!http://packages.debian.org/apt-file!'
 
 HERE
-  if (my $munghtml_extra = $makemaker->{'MY_MUNGHTML_EXTRA'}) {
-    $post =~ s/apt-file!'/apt-file!'\n$munghtml_extra/;
-  }
+    if (my $munghtml_extra = $makemaker->{'MY_MUNGHTML_EXTRA'}) {
+      $post =~ s/apt-file!'/apt-file!'\\
+$munghtml_extra/;
+    }
 
-  my @pmfiles = keys %{$makemaker->{'PM'}};
-  my @exefiles = (defined $makemaker->{'EXE_FILES'}
-                  ? @{$makemaker->{'EXE_FILES'}}
-                  : ());
-  my %html_files;
+    my @pmfiles = keys %{$makemaker->{'PM'}};
+    @pmfiles = grep {!/\.mo$/} @pmfiles; # not LocaleData .mo files
+    my @exefiles = (defined $makemaker->{'EXE_FILES'}
+                    ? @{$makemaker->{'EXE_FILES'}}
+                    : ());
+    my %html_files;
 
-  foreach my $pm (@exefiles, @pmfiles) {
-    my $html = File::Basename::basename($pm,'.pm') . '.html';
-    next if $html_files{$html}++;
-    $post .= <<"HERE";
+    foreach my $pm (@exefiles, @pmfiles) {
+      my $html = $pm;
+      $html =~ s{.*/}{};     # remove any directory part
+      $html =~ s{.p[ml]$}{}; # remove .pm or .pl
+      $html .= '.html';
+      next if $html_files{$html}++;
+      $post .= <<"HERE";
 $html: $pm Makefile
 	\$(MY_POD2HTML) $pm \\
 	  | \$(MY_MUNGHTML) >$html
 HERE
-  }
+    }
 
-  $post .= "HTML_FILES = " . join(' ', keys %html_files) . "\n";
-  $post .= <<'HERE';
+    $post .= "HTML_FILES = " . join(' ', keys %html_files) . "\n";
+    $post .= <<'HERE';
 html: $(HTML_FILES)
 HERE
-
+  }
 
   $post .= <<'HERE';
 
@@ -161,7 +176,7 @@ HERE
 # development stuff -- from inc/MyMakeMakerExtras.pm
 
 version:
-	$(NOECHO) $(ECHO) $(VERSION)
+	$(NOECHO)$(ECHO) $(VERSION)
 
 HERE
 
@@ -237,7 +252,7 @@ check-debug-constants:
 	if egrep -n 'DEBUG => [1-9]' $(EXE_FILES) $(TO_INST_PM); then exit 1; else exit 0; fi
 
 check-spelling:
-	if egrep -nHi 'explict|agument|destionation|\bthe the\b' -r . \
+	if egrep -nHi 'explict|agument|destionation|\bthe the\b|\bnote sure\b' -r . \
 	  | egrep -v '(MyMakeMakerExtras|Makefile|dist-deb).*grep -nH'; \
 	then false; else true; fi
 

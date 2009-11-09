@@ -34,11 +34,11 @@ my $database = '/var/cache/locate/locatedb';
 }
 
 {
-  my $t = Devel::TimeThis->new('File-Locate all');
+  my $t = Devel::TimeThis->new('Callback all');
   File::Locate::locate ("*", $database, sub { });
 }
 {
-  my $t = Devel::TimeThis->new('File-Locate no match');
+  my $t = Devel::TimeThis->new('Callback no match');
   File::Locate::locate ('fdsjkfjsdk', $database, sub {});
 }
 

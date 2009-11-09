@@ -16,6 +16,7 @@
    You should have received a copy of the GNU General Public License along
    with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>. */
 
+#include <fnmatch.h>
 #include <stdlib.h>
 
 #include "EXTERN.h"
@@ -45,6 +46,35 @@
 #define DEBUG2(code)
 #endif
 
+#define MATCH(target)                                                   \
+  do {                                                                  \
+      if (regexp) {                                                     \
+        if (CALLREGEXEC (regexp,                                        \
+                         entry_p, entry_p + entry_len,                  \
+                         entry_p, 0, entry, NULL,                       \
+                         REXEC_IGNOREPOS)) {                            \
+          goto target;                                                  \
+        }                                                               \
+        DEBUG1 (printf ("  no match regexp\n"));                        \
+      } else {                                                          \
+        if (! globs_ptr) {                                              \
+          DEBUG1 (printf ("  no regexp or globs, so match\n"));         \
+          goto target;                                                  \
+        }                                                               \
+      }                                                                 \
+      if (globs_ptr) {                                                  \
+        SSize_t i;                                                      \
+        for (i = 0; i <= globs_end; i++) {                              \
+          DEBUG2 (printf ("  fnmatch \"%s\" entry \"%s\"\n",            \
+                          SvPV_nolen(globs_ptr[i]), entry_p));          \
+          if (fnmatch (SvPV_nolen(globs_ptr[i]), entry_p, 0) == 0)      \
+            goto target;                                                \
+        }                                                               \
+        DEBUG1 (printf ("  no match globs\n"));                         \
+      }                                                                 \
+      DEBUG1 (printf ("  no match\n"));                                 \
+    } while (0)
+
 MODULE = File::Locate::Iterator   PACKAGE = File::Locate::Iterator
 
 void
@@ -53,8 +83,10 @@ PROTOTYPE:
 CODE:
   {
     HV *h;
-    SV **svp, *entry, *regexp_sv, *sharelen_sv;
-    REGEXP *regexp;
+    SV **svp, *entry, *sharelen_sv;
+    SV **globs_ptr = NULL;
+    SSize_t globs_end;
+    REGEXP *regexp = NULL;
     const char *field;
     char *entry_p;
     STRLEN entry_len;
@@ -75,9 +107,30 @@ CODE:
     GET_FIELD (sharelen_sv, "sharelen");
     sharelen = SvIV (sharelen_sv);
 
-    GET_FIELD (regexp_sv, "regexp");
-    regexp = SvRX(regexp_sv);
-    if (! regexp) croak ("'regexp' not a regexp");
+    {
+      SV **regexp_svp = hv_fetch (h, "regexp", 6, 0);
+      if (regexp_svp) {
+        regexp = SvRX(*regexp_svp);
+        if (! regexp) croak ("'regexp' not a regexp");
+      }
+      DEBUG1 (printf ("regexp %p\n", regexp));
+    }
+
+    {
+      SV **globs_svp = hv_fetch (h, "globs", 5, 0);
+      if (globs_svp) {
+        SV *globs_sv = *globs_svp;
+        if (! SvROK (globs_sv))
+          croak ("oops, 'globs' not a reference");
+        AV *globs_av = (AV*) SvRV(globs_sv);
+        if (SvTYPE(globs_av) != SVt_PVAV)
+          croak ("oops, 'globs' not an arrayref");
+        globs_ptr = AvARRAY (globs_av);
+        globs_end = av_len (globs_av);
+      }
+      DEBUG1 (printf ("globs_svp %p globs_ptr %p globs_end %d\n",
+                      globs_svp, globs_ptr, globs_end));
+    }
 
     svp = hv_fetch (h, "mref", 4, 0);
     if (svp) {
@@ -95,6 +148,7 @@ CODE:
       DEBUG2 (printf ("mmap %p mlen %u, pos %u\n", mp, mlen));
 
       for (;;) {
+        DEBUG2 (printf ("MREF_LOOP\n"));
         if (pos >= mlen) {
           /* EOF */
           at_eof = 1;
@@ -132,12 +186,10 @@ CODE:
         pos = gets_end + 1 - mp;
         
         entry_p = SvPV(entry, entry_len);
-        if (CALLREGEXEC (regexp,
-                         entry_p, entry_p + entry_len,
-                         entry_p, 0, entry, NULL,
-                         REXEC_IGNOREPOS))
-          break;
+
+        MATCH(MREF_LOOP_END);
       }
+    MREF_LOOP_END:
       SvUV_set (pos_sv, pos);
 
     } else {
@@ -159,6 +211,7 @@ CODE:
       sv_setpvn (PL_rs, "\0", 1);
 
       for (;;) {
+        DEBUG2 (printf ("IO_LOOP\n"));
         got = PerlIO_read (fp, adj_u.buf, 1);
         if (got == 0) {
           /* EOF */
@@ -213,16 +266,14 @@ CODE:
         entry_len--;
         SvCUR_set (entry, entry_len); /* chomp \0 terminator */
 
-        if (CALLREGEXEC (regexp,
-                         entry_p, entry_p + entry_len,
-                         entry_p, 0, entry, NULL,
-                         REXEC_IGNOREPOS))
-          break;
+        MATCH(IO_LOOP_END);
       }
+    IO_LOOP_END:
+      ;
     }
     if (at_eof) {
       sv_setpv (entry, NULL);
-      DEBUG2 (printf ("eof\n"); sv_dump (entry); printf ("\n"));
+      DEBUG2 (printf ("eof\n  entry=\n"); sv_dump (entry); printf ("\n"));
       XSRETURN(0);
 
     } else {

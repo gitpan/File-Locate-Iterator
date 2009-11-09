@@ -40,7 +40,7 @@
 # and "myman" leaving MANIFEST.old
 \.old$
 
-# built stuff
+# built - MakeMaker
 ^Makefile$
 ^blib
 ^pm_to_blib
@@ -48,14 +48,14 @@
 # MakeMaker 6.18 to 6.25, apparently
 ^blibdirs\.ts$
 
-# cdbs and debhelper built stuff
+# built - cdbs and debhelper
 ^debian/stamp-
 ^debian/.*\.log$
 
-# texinfo.tex temporaries
+# built - texinfo.tex temporaries
 \.(aux|cp|cps|fn|fns|ky|log|pg|toc|tp|tps|vr)$
 
-# xsub .c, .o, try not to exclude ordinary C files though, maybe ...
+# built - xsub .c, .o, try not to exclude ordinary C files though, maybe ...
 #(^|/)[A-Z][A-Za-z0-9_]*\.c$
 (^|/[^Z])[^/]+\.c$
 \.o$
@@ -64,6 +64,7 @@
 # built - configury
 ^conftest
 ^config\.h$
+^myconfig\.h$
 
 # built - toplevel html pages
 ^[a-zA-Z][^.]+\.html$

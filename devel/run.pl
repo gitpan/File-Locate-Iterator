@@ -23,6 +23,26 @@ use warnings;
 use File::Locate::Iterator;
 
 {
+  my $count = 0;
+  my $it = File::Locate::Iterator->new (globs => ['*.c','/z*'],
+                                       );
+  print "regexp: ",(defined $it->{'regexp'} ? $it->{'regexp'} : 'undef'),"\n";
+  print "match: $it->{'match'}\n";
+
+  while (defined (my $str = $it->next)) {
+    print "got '$str'\n";
+    # print "  current ",$it->current,"\n";
+    last if $count++ > 3;
+  }
+  exit 0;
+}
+
+{
+  require File::FnMatch;
+  print File::FnMatch::fnmatch('*.c','/foo/bar.c');
+  exit 0;
+}
+{
   my $filename = 't/samp.locatedb';
   open my $fh, '<', $filename or die;
   my $fm = File::Locate::Iterator::FileMap->get($fh);
