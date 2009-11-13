@@ -26,7 +26,7 @@ use Test::More tests => 64;
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 3;
+my $want_version = 4;
 cmp_ok ($File::Locate::Iterator::VERSION, '>=', $want_version,
         'VERSION variable');
 cmp_ok (File::Locate::Iterator->VERSION,  '>=', $want_version,

@@ -27,7 +27,7 @@ use List::Util;
 use vars ('$VERSION', '@ISA');
 
 BEGIN {
-  $VERSION = 3;
+  $VERSION = 4;
 }
 
 use constant DEBUG => 0;
@@ -325,8 +325,13 @@ sub get {
   return ($cache{$key} || do {
     require File::Map;
     my $self = bless { key => $key }, $class;
-    # explicit \$foo since no prototype when only "require File::Map"
-    File::Map::map_handle (\$self->{'mmap'}, $fh);
+    my $length = -s $fh;
+    if ($length == 0) {
+      $self->{'mmap'} = '';
+    } else {
+      # explicit \$foo since no prototype when only "require File::Map"
+      File::Map::map_handle (\$self->{'mmap'}, $fh, '<', 0, $length);
+    }
     Scalar::Util::weaken ($cache{$key} = $self);
     $self;
   });

@@ -22,6 +22,7 @@ devel/run.pl
 devel/Shared.pm
 devel/speed.pl
 devel/stat.pl
+devel/wait-status.pl
 examples/iterator-simple.pl
 examples/iterator.pl
 examples/native.pl

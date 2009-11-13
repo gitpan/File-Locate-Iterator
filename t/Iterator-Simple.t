@@ -22,8 +22,8 @@ use strict;
 use warnings;
 use Test::More;
 
-eval { require Iterator }
-  or plan skip_all => "Iterator.pm not available -- $@";
+eval { require Iterator::Simple }
+  or plan skip_all => "Iterator::Simple not available -- $@";
 
 plan tests => 6;
 
@@ -32,7 +32,7 @@ require Iterator::Simple::Locate;
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 3;
+my $want_version = 4;
 cmp_ok ($Iterator::Simple::Locate::VERSION, '>=', $want_version,
         'VERSION variable');
 cmp_ok (Iterator::Simple::Locate->VERSION,  '>=', $want_version,

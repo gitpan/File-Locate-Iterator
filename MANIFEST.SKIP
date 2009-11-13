@@ -67,7 +67,7 @@
 ^myconfig\.h$
 
 # built - toplevel html pages
-^[a-zA-Z][^.]+\.html$
+^[a-zA-Z][^./]+\.html$
 
 # cpantesters reports
 ^msg\d*\.html$
@@ -83,12 +83,15 @@
 ^up$
 ^c$
 
-# my special case pulp test build stuff
+# special case pulp test build stuff
 devel/h2xs/TestConstFoo/
 
-# my special case mall executables
+# special case mall executables
 devel/hblk
 devel/mallopt
+
+# special htmlext environs
+^test-dist/
 
 
 \.bak$

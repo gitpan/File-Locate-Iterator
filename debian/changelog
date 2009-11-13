@@ -1,5 +1,5 @@
-libfile-locate-iterator-perl (3-1) unstable; urgency=low
+libfile-locate-iterator-perl (4-1) unstable; urgency=low
 
   * Packaged version.
 
- -- Kevin Ryde <user42@zip.com.au>  Tue, 10 Nov 2009 07:30:21 +1100
+ -- Kevin Ryde <user42@zip.com.au>  Fri, 13 Nov 2009 10:07:10 +1100

@@ -267,9 +267,13 @@ diff-prev:
 	-$${PAGER:-less} diff.tmp/tree.diff
 	rm -rf diff.tmp
 
+# in a hash-style multi-const this "use constant" pattern only picks up the
+# first constant, unfortunately, but it's better than nothing
 TAG_FILES = $(TO_INST_PM)
 TAGS: $(TAG_FILES)
-	etags $(TAG_FILES)
+	etags \
+	  --regex='{perl}/use[ \t]+constant\(::defer\)?[ \t]+\({[ \t]*\)?\([A-Za-z_][^ \t=,;]+\)/\3/' \
+	  $(TAG_FILES)
 
 HERE
 

@@ -17,6 +17,10 @@ with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 4, November 2009
+    - don't depend on /var/cache/locate/locatedb in the tests
+    - avoid mmap len=0 since freebsd mmap succeeds but munmap then fails
+
 Version 3, November 2009
     - use File::FnMatch for globs (rather than converting to a regexp)
 
