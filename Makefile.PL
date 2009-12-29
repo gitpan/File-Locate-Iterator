@@ -24,25 +24,56 @@ use ExtUtils::MakeMaker;
 use lib 'inc';
 use MyMakeMakerExtras;
 
+
+my $want_xs = 1;
+@ARGV = grep { /^MY_WITHOUT_XS/
+               ? do { $want_xs = 0; 0 }  # record and remove
+                 : 1 } @ARGV;
+if (! $want_xs) {
+  print "XS skipped by request\n";
+}
+#
+# SvRX() is new in perl 5.10.0 and ppport.h 3.19 doesn't offer an
+# implementation for earlier perl
+#
+if ($want_xs && $] < 5.010) {
+  print "XS skipped for perl $[ (believe need 5.010 for SvRX)\n";
+  $want_xs = 0
+}
+if ($want_xs) {
+  print "XS used by default.  If you don't have a compiler or the .xs
+doesn't work then disable using
+    perl Makefile.PL MY_WITHOUT_XS=1
+"
+}
+
+
 MyMakeMakerExtras::WriteMakefile
   (NAME         => 'File::Locate::Iterator',
    ABSTRACT     => 'Read "locate" database file with an iterator.',
    VERSION_FROM => 'lib/File/Locate/Iterator.pm',
-   MIN_PERL_VERSION => '5.006',
+   AUTHOR       => 'Kevin Ryde <user42@zip.com.au>',
+   LICENSE      => 'gpl',
+   SIGN         => 1,
    PREREQ_PM    => {
                     'File::FnMatch' => 0,
                     'List::Util'    => 0,
                     'Test::More'    => 0,
                    },
+   MIN_PERL_VERSION => '5.006',
 
-   AUTHOR       => 'Kevin Ryde <user42@zip.com.au>',
-   LICENSE      => 'gpl',
-   SIGN         => 1,
+   # as of ExtUtils::MakeMaker 6.55_02 if you force XS then C is still
+   # generated from scanned .xs files, so must force it too
+   XS => ($want_xs ? { 'Iterator.xs' => 'Iterator.c' } : {}),
+   C  => ($want_xs ? [ 'Iterator.c' ] : []),
 
    META_MERGE
    => { resources
         => { homepage
              => 'http://user42.tuxfamily.org/file-locate-iterator/index.html',
+           },
+        recommends
+        => { 'File::Map'     => 0.20, # version 0.20 for empty files
            },
         optional_features
         => { maximum_examples

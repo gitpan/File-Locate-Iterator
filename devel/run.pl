@@ -23,11 +23,44 @@ use warnings;
 use File::Locate::Iterator;
 
 {
+  my $use_mmap = 'if_possible';
+
+  my $filename = File::Locate::Iterator->default_database_file;
+
+  my $mode = '<:encoding(iso-8859-1)';
+  $mode = '<:utf8';
+  $mode = '<:raw';
+  $mode = '<:mmap';
+  open my $fh, $mode, $filename
+    or die;
+
+  { local $,=' '; print "layers ", PerlIO::get_layers($fh), "\n"; }
+
+  my $it = File::Locate::Iterator->new (database_fh => $fh,
+                                        use_mmap => $use_mmap,
+                                       );
+  print exists $it->{'mmap'} ? "using mmap\n" : "using fh\n";
+
+  exit 0;
+}
+
+
+{
+  my $filename = 't/samp.locatedb';
+  open my $fh, '<', $filename or die;
+  require PerlIO;
+  my $fm = File::Locate::Iterator::FileMap->get($fh);
+  print "$fm\n";
+  my $fm2 = File::Locate::Iterator::FileMap->get($fh);
+  print "$fm2\n";
+  exit 0;
+}
+{
   my $count = 0;
   my $it = File::Locate::Iterator->new (globs => ['*.c','/z*'],
                                        );
   print "regexp: ",(defined $it->{'regexp'} ? $it->{'regexp'} : 'undef'),"\n";
-  print "match: $it->{'match'}\n";
+  print "match: ",(defined $it->{'match'} ? $it->{'match'} : 'undef'),"\n";
 
   while (defined (my $str = $it->next)) {
     print "got '$str'\n";
@@ -42,15 +75,7 @@ use File::Locate::Iterator;
   print File::FnMatch::fnmatch('*.c','/foo/bar.c');
   exit 0;
 }
-{
-  my $filename = 't/samp.locatedb';
-  open my $fh, '<', $filename or die;
-  my $fm = File::Locate::Iterator::FileMap->get($fh);
-  print "$fm\n";
-  my $fm2 = File::Locate::Iterator::FileMap->get($fh);
-  print "$fm2\n";
-  exit 0;
-}
+
 {
   # my $use_mmap = 1;
   my $use_mmap = 'if_possible';

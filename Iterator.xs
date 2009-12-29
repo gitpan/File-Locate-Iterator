@@ -23,17 +23,10 @@
 #include "perl.h"
 #include "XSUB.h"
 
+#define NEED_sv_2pv_flags
 #include "ppport.h"
 
 #define DEBUG 0
-
-#define GET_FIELD(var,name)                             \
-  do {                                                  \
-    field = (name);                                     \
-    svp = hv_fetch (h, field, strlen(field), 0);        \
-    if (! svp) goto FIELD_MISSING;                      \
-    (var) = *svp;                                       \
-  } while (0)
 
 #if DEBUG >= 1
 #define DEBUG1(code) do { code; } while (0)
@@ -45,6 +38,14 @@
 #else
 #define DEBUG2(code)
 #endif
+
+#define GET_FIELD(var,name)                             \
+  do {                                                  \
+    field = (name);                                     \
+    svp = hv_fetch (h, field, strlen(field), 0);        \
+    if (! svp) goto FIELD_MISSING;                      \
+    (var) = *svp;                                       \
+  } while (0)
 
 #define MATCH(target)                                                   \
   do {                                                                  \
@@ -64,7 +65,7 @@
       }                                                                 \
       if (globs_ptr) {                                                  \
         SSize_t i;                                                      \
-        for (i = 0; i <= globs_end; i++) {                              \
+        for (i = 0; i <= globs_lastidx; i++) {                          \
           DEBUG2 (printf ("  fnmatch \"%s\" entry \"%s\"\n",            \
                           SvPV_nolen(globs_ptr[i]), entry_p));          \
           if (fnmatch (SvPV_nolen(globs_ptr[i]), entry_p, 0) == 0)      \
@@ -85,7 +86,7 @@ CODE:
     HV *h;
     SV **svp, *entry, *sharelen_sv;
     SV **globs_ptr = NULL;
-    SSize_t globs_end;
+    SSize_t globs_lastidx;
     REGEXP *regexp = NULL;
     const char *field;
     char *entry_p;
@@ -98,7 +99,6 @@ CODE:
     FIELD_MISSING:
       croak ("oops, missing '%s'", field);
     }
-
   START:
     h = (HV*) SvRV(self);
 
@@ -126,10 +126,10 @@ CODE:
         if (SvTYPE(globs_av) != SVt_PVAV)
           croak ("oops, 'globs' not an arrayref");
         globs_ptr = AvARRAY (globs_av);
-        globs_end = av_len (globs_av);
+        globs_lastidx = av_len (globs_av);
       }
-      DEBUG1 (printf ("globs_svp %p globs_ptr %p globs_end %d\n",
-                      globs_svp, globs_ptr, globs_end));
+      DEBUG1 (printf ("globs_svp %p globs_ptr %p globs_lastidx %d\n",
+                      globs_svp, globs_ptr, globs_lastidx));
     }
 
     svp = hv_fetch (h, "mref", 4, 0);
@@ -206,7 +206,7 @@ CODE:
       fp = IoIFP(sv_2io(fh));
       DEBUG2(printf ("fp=%p fh=\n", fp); sv_dump (fh));
 
-      /* $/ = "\0" */
+      /*  $/ = "\0"  */
       save_item (PL_rs);
       sv_setpvn (PL_rs, "\0", 1);
 

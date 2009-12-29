@@ -26,12 +26,13 @@ use File::Locate::Iterator;
 
 my $database = '/var/cache/locate/locatedb';
 
-{
-  my $full_database = $database;
-  $database = '/tmp/x.locatedb';
-  system("locate --database=$full_database '*' | head -30000 | /usr/lib/locate/frcode >$database && ls -l $database") == 0
-            or die;
-}
+# Run on shortened locatedb.
+# {
+#   my $full_database = $database;
+#   $database = '/tmp/x.locatedb';
+#   system("locate --database=$full_database '*' | head -30000 | /usr/lib/locate/frcode >$database && ls -l $database") == 0
+#             or die;
+# }
 
 {
   my $t = Devel::TimeThis->new('Callback all');
@@ -45,13 +46,13 @@ my $database = '/var/cache/locate/locatedb';
 foreach my $method ('fh', 'mmap') {
   my $use_mmap = ($method eq 'mmap');
   {
-    my $t = Devel::TimeThis->new("Iterator all, $method");
+    my $t = Devel::TimeThis->new("Iterator $method, all");
     my $it = File::Locate::Iterator->new (database_file => $database,
                                           use_mmap => $use_mmap);
     while (defined ($it->next)) { }
   }
   {
-    my $t = Devel::TimeThis->new("Iterator no match, $method");
+    my $t = Devel::TimeThis->new("Iterator $method, no match");
     my $it = File::Locate::Iterator->new (database_file => $database,
                                           regexp => qr/^$/,
                                           use_mmap => $use_mmap);

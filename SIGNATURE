@@ -1,5 +1,5 @@
 This file contains message digests of all files listed in MANIFEST,
-signed via the Module::Signature module, version 0.55.
+signed via the Module::Signature module, version 0.61.
 
 To verify the content in this distribution, first make sure you have
 Module::Signature installed, then type:
@@ -15,55 +15,61 @@ not run its Makefile.PL or Build.PL.
 Hash: SHA1
 
 SHA1 842745cb706f8f2126506f544492f7a80dbe29b3 COPYING
-SHA1 78a780504439397c5f89bd4ccb31b762bb43d3f4 Changes
-SHA1 f40b51fe5c316b0af17dab610de3b1be6c35fa50 MANIFEST
+SHA1 651464aaca489473f6093301bc1656fc53076b41 Changes
+SHA1 5570978b340c98e9391b688aa35daa928ec33039 Iterator.xs
+SHA1 f05944d8618988c1b6907d42391a2d06f71ebee5 MANIFEST
 SHA1 bb78fa7bf2dfebdda59c9efb64db51b173fb9e2f MANIFEST.SKIP
-SHA1 3760bcd46cf656e1ee7275b173b24f4c0a272586 META.yml
-SHA1 e8c0cb146d683668535b792ef926293123377ca0 Makefile.PL
+SHA1 63142045ddb0aaa869b6a0418f730901d99ad47f META.yml
+SHA1 a905a4b67ecef06ed5016eebaaf6d8e4432bc637 Makefile.PL
 SHA1 ac01829ebcc77bd29d9ec44c7d5b0f1f4cdccfe4 README
-SHA1 b2362b9b4de2b6baf431e45ca134cdfddd6c70c3 debian/changelog
+SHA1 473aa089f1a216de9530f48fdeffe89bd1785c9a debian/changelog
 SHA1 ac3478d69a3c81fa62e60f5c3696165a4e5e6ac4 debian/compat
-SHA1 476f0768483490ec57436f99b9835a710283858d debian/control
+SHA1 3ebe46e47333262a87d49943b57bfb106f3240c0 debian/control
 SHA1 2fc2f14b96b130a3d0838c4c3697a859e665d515 debian/copyright
 SHA1 e1b9cd434223e41b4c248ea145f414c4ef32e12b debian/rules
 SHA1 026052dbdff9ae24b456418590bbfb4c3797243b debian/watch
 SHA1 de55e8d2fab495b52bf6c56d540b48e7f3c54057 devel/GlobRegexp.pm
-SHA1 ca42430adf8c4f4fd65005436998d4bfbbeb9ede devel/Iterator.xs
+SHA1 32e1a16cfc3bd62fc6ca11581eebb60f4a9f7e63 devel/Makefile
 SHA1 7fe5164afdd110b5091797a2888fa0aa9f9633f2 devel/Shared.pm
 SHA1 dae851837316f1fed390661364e1d689dc130687 devel/balanced.pl
+SHA1 8c669467e8f8d644240c4fccb3a97ed151eaf01d devel/bin-no-cc/cc
 SHA1 bd2ad538b3aea5bce9096db1198cc359aa8e7025 devel/glob.pl
 SHA1 0a4a739349fddaecefde5141d1afa44b3d40a46f devel/iterator-simple.pl
 SHA1 226f3534ff13d25d8e55b349a1ac7c7cfc0d804b devel/iterator.pl
 SHA1 feaa4f0427517ce6f9e6cd2af85fe579e6762a7c devel/lib/Sys/Mmap/Object.pm
 SHA1 f8fc47364def14021d1406745c96b6406f428b99 devel/mmap-multi.pl
 SHA1 f0a4cb825f8cdc8d79bdeb6bfa46a624ee235065 devel/mmap-speed.pl
+SHA1 b50f4187c4960e2b35cc7451a91d15ad36affbdc devel/mmap-zero.pl
 SHA1 4a3d129d23b1277b3ea57cb036677e0a7ec88b95 devel/mmap.pl
 SHA1 1c295e53937b4967fd0c0311cae6d112aa3d2975 devel/neg.locatedb
 SHA1 bbb2181ff54bddfda2b9dc9ddcbd71abfb9b1a10 devel/neg.pl
-SHA1 f11c541fd18dc349450c7cbbf66ed0288d51f753 devel/run.pl
-SHA1 7dd6c5a98dbe42730d88622725f6aadf6641f008 devel/speed.pl
+SHA1 1e9304821b9dddfc4db5ac067ec76580e65a95fd devel/run.pl
+SHA1 c91904006a5b160577a8ba5d5a813a7cfc33ad94 devel/speed.pl
 SHA1 8db9d40ebbd57969972d048a4f96405bdb4f3768 devel/stat.pl
 SHA1 f53e36b46ef7529d651ecab097fc740e2dbf6b77 devel/wait-status.pl
 SHA1 8ce7ca6667e0b0c5206978690a0e286892c43067 examples/iterator-simple.pl
 SHA1 0eb47a400768facd9411043ca458faf3ebb65d92 examples/iterator.pl
 SHA1 9e4c74870232a69eddd239bb017a6e0efc44c881 examples/native.pl
-SHA1 9cc476b46b3ef6250a5f4c6fbd0c09c17f5c06e2 inc/MyMakeMakerExtras.pm
-SHA1 949cd0e6b01d66400a5843cd3105b61bcf1aefc9 lib/File/Locate/Iterator.pm
-SHA1 f4450e5729de3d1b0c86debae8f2f1f9e0011a96 lib/Iterator/Locate.pm
-SHA1 c9dc94bacaf20e6106a79c18d0f14bc1dc2597f0 lib/Iterator/Simple/Locate.pm
+SHA1 04b47938da4980ca0da3d5560d7826ef3139e861 inc/MyMakeMakerExtras.pm
+SHA1 8e7135d2f4d47aa887d445680ae286400639f7b6 inc/my_pod2html
+SHA1 6eef09b257d0b205cb228f603a3c5069864d32fe lib/File/Locate/Iterator.pm
+SHA1 4009d1dd70b1a0802ec29b5847732eb37271e547 lib/Iterator/Locate.pm
+SHA1 ee0c1c6eb48eed79c0c85cc2de82938e76cac24b lib/Iterator/Simple/Locate.pm
 SHA1 847ddd74867e960646b4c166ab42047db4f9a1c4 ppport.h
 SHA1 378b932305fb60823467c2af3c771fe3fc295a13 t/0-META-read.t
 SHA1 a343ed4dce96d05de51eed1ec065911584b96fce t/0-Test-DistManifest.t
 SHA1 bba0dc087cbe64d8f100ab77e6cef061c0bebf27 t/0-Test-Pod.t
-SHA1 a1d639ff35929b0fd27d423fbcc1881e501b2915 t/File-Locate-Iterator.t
-SHA1 6f164835955701477720ecb86d74122a4e0975e1 t/Iterator-Simple.t
-SHA1 c7293f9469229e22c9022993bb8a37275ef3ffd9 t/Iterator.t
+SHA1 21b96eeaf1581412b8fd1b6b8ee87d3e74654ea4 t/0-Test-Synopsis.t
+SHA1 39fb4f79da7687abc825c4ea646acb3ee9e3a342 t/0-Test-YAML-Meta.t
+SHA1 cceac0a7e1ef8b96ee4dbca93d197c2014896d00 t/File-Locate-Iterator.t
+SHA1 9ac6a4ecc3864cdb1a2ae90aa77114c2c689f4a7 t/Iterator-Simple.t
+SHA1 e6b960976a07ad030cf5f7c9a82314b907738da0 t/Iterator.t
 SHA1 00bd2b32ded7fc14840f3c92db05d422525b2db0 t/samp.locatedb
 SHA1 57da2f831aa94edb72c65271df8b4cb588c40a6e t/samp.txt
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iD8DBQFK/K4QLFMCIV9q3ToRAmGlAJ987DOqjs/ws8R3FtitzSyw5Ex3hwCffn7Z
-WPRSxm/620cAycah2PrJrmE=
-=jO3u
+iD8DBQFLOn+LLFMCIV9q3ToRAlu1AKCkGZeQk6IP8tHOeg5vp+xzwCBbEwCfWv65
+lleFDH4YkS0gH9hngNdjs9o=
+=w8e1
 -----END PGP SIGNATURE-----

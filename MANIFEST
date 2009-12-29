@@ -7,14 +7,16 @@ debian/copyright
 debian/rules
 debian/watch
 devel/balanced.pl
+devel/bin-no-cc/cc
 devel/glob.pl
 devel/GlobRegexp.pm
 devel/iterator-simple.pl
 devel/iterator.pl
-devel/Iterator.xs
 devel/lib/Sys/Mmap/Object.pm
+devel/Makefile
 devel/mmap-multi.pl
 devel/mmap-speed.pl
+devel/mmap-zero.pl
 devel/mmap.pl
 devel/neg.locatedb
 devel/neg.pl
@@ -26,7 +28,9 @@ devel/wait-status.pl
 examples/iterator-simple.pl
 examples/iterator.pl
 examples/native.pl
+inc/my_pod2html
 inc/MyMakeMakerExtras.pm
+Iterator.xs
 lib/File/Locate/Iterator.pm
 lib/Iterator/Locate.pm
 lib/Iterator/Simple/Locate.pm
@@ -39,6 +43,8 @@ SIGNATURE
 t/0-META-read.t
 t/0-Test-DistManifest.t
 t/0-Test-Pod.t
+t/0-Test-Synopsis.t
+t/0-Test-YAML-Meta.t
 t/File-Locate-Iterator.t
 t/Iterator-Simple.t
 t/Iterator.t
