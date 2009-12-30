@@ -26,7 +26,7 @@ use Test::More tests => 64;
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 5;
+my $want_version = 6;
 cmp_ok ($File::Locate::Iterator::VERSION, '>=', $want_version,
         'VERSION variable');
 cmp_ok (File::Locate::Iterator->VERSION,  '>=', $want_version,
@@ -126,8 +126,7 @@ diag "Test samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
   foreach my $use_mmap (0, 'if_sensible', 'if_possible') {
     my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
                                           use_mmap => $use_mmap);
-    my $noinfloop = no_inf_loop("$samp_locatedb with use_mmap=$use_mmap it="
-                                . explain $it);
+    my $noinfloop = no_inf_loop("$samp_locatedb with use_mmap=$use_mmap");
     my @want = @samp_txt;
     my @got;
     while (my ($filename) = $it->next) {

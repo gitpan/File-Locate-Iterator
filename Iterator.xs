@@ -168,7 +168,8 @@ CODE:
         sharelen += adj;
         if (sharelen < 0 || sharelen > SvCUR(entry)) {
           sv_setpv (entry, NULL);
-          croak ("Invalid database contents (bad share length %d)", sharelen);
+          croak ("Invalid database contents (bad share length %"IVdf")",
+                 sharelen);
         }
         DEBUG1 (printf ("sharelen %ld\n", sharelen));
         
@@ -246,7 +247,8 @@ CODE:
 
         if (sharelen < 0 || sharelen > SvCUR(entry)) {
           sv_setpv (entry, NULL);
-          croak ("Invalid database contents (bad share length %d)", sharelen);
+          croak ("Invalid database contents (bad share length %"IVdf")",
+                 sharelen);
         }
 
         gets_ret = sv_gets (entry, fp, sharelen);

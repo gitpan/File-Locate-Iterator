@@ -26,7 +26,7 @@ use File::FnMatch;
 use vars ('$VERSION', '@ISA');
 
 BEGIN {
-  $VERSION = 5;
+  $VERSION = 6;
 }
 
 use constant DEBUG => 0;

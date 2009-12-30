@@ -17,6 +17,9 @@ with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 6, December 2009
+    - oops, Test::More::explain() is new
+
 Version 5, December 2009
     - dual XS or pure-perl
 
