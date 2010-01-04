@@ -1,5 +1,5 @@
 /*
-   Copyright 2009 Kevin Ryde
+   Copyright 2009, 2010 Kevin Ryde
 
    This file is part of File-Locate-Iterator.
 
@@ -41,10 +41,11 @@
 
 #define GET_FIELD(var,name)                             \
   do {                                                  \
+    SV **svptr;                                         \
     field = (name);                                     \
-    svp = hv_fetch (h, field, strlen(field), 0);        \
-    if (! svp) goto FIELD_MISSING;                      \
-    (var) = *svp;                                       \
+    svptr = hv_fetch (h, field, strlen(field), 0);      \
+    if (! svptr) goto FIELD_MISSING;                    \
+    (var) = *svptr;                                     \
   } while (0)
 
 #define MATCH(target)                                                   \
@@ -63,7 +64,7 @@
           goto target;                                                  \
         }                                                               \
       }                                                                 \
-      if (globs_ptr) {                                                  \
+      {                                                                 \
         SSize_t i;                                                      \
         for (i = 0; i <= globs_lastidx; i++) {                          \
           DEBUG2 (printf ("  fnmatch \"%s\" entry \"%s\"\n",            \
@@ -84,9 +85,9 @@ PROTOTYPE:
 CODE:
   {
     HV *h;
-    SV **svp, *entry, *sharelen_sv;
+    SV **mref_svptr, *entry, *sharelen_sv;
     SV **globs_ptr = NULL;
-    SSize_t globs_lastidx;
+    SSize_t globs_lastidx = -1;
     REGEXP *regexp = NULL;
     const char *field;
     char *entry_p;
@@ -108,18 +109,18 @@ CODE:
     sharelen = SvIV (sharelen_sv);
 
     {
-      SV **regexp_svp = hv_fetch (h, "regexp", 6, 0);
-      if (regexp_svp) {
-        regexp = SvRX(*regexp_svp);
+      SV **regexp_svptr = hv_fetch (h, "regexp", 6, 0);
+      if (regexp_svptr) {
+        regexp = SvRX(*regexp_svptr);
         if (! regexp) croak ("'regexp' not a regexp");
       }
-      DEBUG1 (printf ("regexp %p\n", regexp));
+      DEBUG1 (printf ("regexp %"UVxf"\n", PTR2UV(regexp)));
     }
 
     {
-      SV **globs_svp = hv_fetch (h, "globs", 5, 0);
-      if (globs_svp) {
-        SV *globs_sv = *globs_svp;
+      SV **globs_svptr = hv_fetch (h, "globs", 5, 0);
+      if (globs_svptr) {
+        SV *globs_sv = *globs_svptr;
         if (! SvROK (globs_sv))
           croak ("oops, 'globs' not a reference");
         AV *globs_av = (AV*) SvRV(globs_sv);
@@ -128,14 +129,15 @@ CODE:
         globs_ptr = AvARRAY (globs_av);
         globs_lastidx = av_len (globs_av);
       }
-      DEBUG1 (printf ("globs_svp %p globs_ptr %p globs_lastidx %d\n",
-                      globs_svp, globs_ptr, globs_lastidx));
+      DEBUG1 (printf
+              ("globs_svptr %"UVxf" globs_ptr %"UVxf" globs_lastidx %d\n",
+               PTR2UV(globs_svptr), PTR2UV(globs_ptr), globs_lastidx));
     }
 
-    svp = hv_fetch (h, "mref", 4, 0);
-    if (svp) {
+    mref_svptr = hv_fetch (h, "mref", 4, 0);
+    if (mref_svptr) {
       SV *mref, *mmap, *pos_sv;
-      mref = *svp;
+      mref = *mref_svptr;
       char *mp, *gets_beg, *gets_end;
       STRLEN mlen;
       UV pos;
@@ -145,7 +147,8 @@ CODE:
 
       GET_FIELD (pos_sv, "pos");
       pos = SvUV(pos_sv);
-      DEBUG2 (printf ("mmap %p mlen %u, pos %u\n", mp, mlen));
+      DEBUG2 (printf ("mmap %"UVxf" mlen %u, pos %"UVuf"\n",
+                      PTR2UV(mp), mlen, pos));
 
       for (;;) {
         DEBUG2 (printf ("MREF_LOOP\n"));
@@ -157,13 +160,13 @@ CODE:
         adj = ((I8*)mp)[pos++];
 
         if (adj == -128) {
-          DEBUG1 (printf ("two-byte adj at pos=%lu\n", pos));
+          DEBUG1 (printf ("two-byte adj at pos=%"UVuf"\n", pos));
           if (pos >= mlen-1) goto UNEXPECTED_EOF;
           adj = (I16) ((((U16) ((U8*)mp)[pos]) << 8)
                        + ((U8*)mp)[pos+1]);
           pos += 2;
         }
-        DEBUG1 (printf ("adj %ld at pos=%lu\n", adj, pos));
+        DEBUG1 (printf ("adj %"IVdf" at pos=%"UVuf"\n", adj, pos));
         
         sharelen += adj;
         if (sharelen < 0 || sharelen > SvCUR(entry)) {
@@ -171,14 +174,14 @@ CODE:
           croak ("Invalid database contents (bad share length %"IVdf")",
                  sharelen);
         }
-        DEBUG1 (printf ("sharelen %ld\n", sharelen));
+        DEBUG1 (printf ("sharelen %"IVdf"\n", sharelen));
         
         if (pos >= mlen) goto UNEXPECTED_EOF;
         gets_beg = mp + pos;
         gets_end = memchr (gets_beg, '\0', mlen-pos);
         if (! gets_end) {
-          DEBUG1 (printf ("NUL not found gets_beg=%p len=%lu\n",
-                          gets_beg, mlen-pos));
+          DEBUG1 (printf ("NUL not found gets_beg=%"UVxf" len=%lu\n",
+                          PTR2UV(gets_beg), mlen-pos));
           goto UNEXPECTED_EOF;
         }
         
@@ -196,7 +199,7 @@ CODE:
     } else {
       SV *fh;
       PerlIO *fp;
-      int got, adj;
+      int got;
       union {
         char buf[2];
         U16 u16;
@@ -205,9 +208,10 @@ CODE:
 
       GET_FIELD (fh, "fh");
       fp = IoIFP(sv_2io(fh));
-      DEBUG2(printf ("fp=%p fh=\n", fp); sv_dump (fh));
+      DEBUG2(printf ("fp=%"UVxf" fh=\n", PTR2UV(fp));
+             sv_dump (fh));
 
-      /*  $/ = "\0"  */
+      /*  local $/ = "\0"  */
       save_item (PL_rs);
       sv_setpvn (PL_rs, "\0", 1);
 
@@ -221,7 +225,7 @@ CODE:
         }
         if (got != 1) {
         READ_ERROR:
-          DEBUG1 (printf ("read fp=%p got=%d\n", fp, got));
+          DEBUG1 (printf ("read fp=%"UVxf" got=%d\n", PTR2UV(fp), got));
           if (got < 0) {
             croak ("Error reading database");
           } else {
@@ -240,10 +244,10 @@ CODE:
                           adj_u.u16, ntohs(adj_u.u16)));
           adj = (int) (I16) ntohs(adj_u.u16);
         }
-        DEBUG1 (printf ("adj %d %#x\n", adj, adj));
+        DEBUG1 (printf ("adj %"IVdf" %#"UVxf"\n", adj, adj));
 
         sharelen += adj;
-        DEBUG1 (printf ("sharelen %u %#x\n", sharelen, sharelen));
+        DEBUG1 (printf ("sharelen %"IVdf" %#"UVxf"\n", sharelen, sharelen));
 
         if (sharelen < 0 || sharelen > SvCUR(entry)) {
           sv_setpv (entry, NULL);
@@ -253,7 +257,7 @@ CODE:
 
         gets_ret = sv_gets (entry, fp, sharelen);
         if (gets_ret == NULL) goto UNEXPECTED_EOF;
-        DEBUG2 (printf ("entry gets to %u, chomp to %u, fpos now %lu(%#x)\n",
+        DEBUG2 (printf ("entry gets to %u, chomp to %u, fpos now %lu(%#lx)\n",
                         SvCUR(entry), SvCUR(entry) - 1,
                         (unsigned long) PerlIO_tell(fp),
                         (unsigned long) PerlIO_tell(fp));

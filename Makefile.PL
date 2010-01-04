@@ -42,7 +42,7 @@ if ($want_xs && $] < 5.010) {
 }
 if ($want_xs) {
   print "XS used by default.  If you don't have a compiler or the .xs
-doesn't work then disable using
+doesn't work then disable with
     perl Makefile.PL MY_WITHOUT_XS=1
 "
 }
@@ -56,9 +56,9 @@ MyMakeMakerExtras::WriteMakefile
    LICENSE      => 'gpl',
    SIGN         => 1,
    PREREQ_PM    => {
-                    'File::FnMatch' => 0,
-                    'List::Util'    => 0,
-                    'Test::More'    => 0,
+                    'constant::defer' => 0,
+                    'File::FnMatch'   => 0,
+                    'Test::More'      => 0,
                    },
    MIN_PERL_VERSION => '5.006',
 

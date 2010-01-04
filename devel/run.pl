@@ -23,6 +23,22 @@ use warnings;
 use File::Locate::Iterator;
 
 {
+  my $count = 0;
+  my $it = File::Locate::Iterator->new (globs => ['*.c','/z*'],
+                                        use_mmap => 1,
+                                       );
+  print "fm: ",(defined $it->{'fm'} ? $it->{'fm'} : 'undef'),"\n";
+  print "regexp: ",(defined $it->{'regexp'} ? $it->{'regexp'} : 'undef'),"\n";
+  print "match: ",(defined $it->{'match'} ? $it->{'match'} : 'undef'),"\n";
+
+  while (defined (my $str = $it->next)) {
+    print "got '$str'\n";
+    # print "  current ",$it->current,"\n";
+    last if $count++ > 3;
+  }
+  exit 0;
+}
+{
   my $use_mmap = 'if_possible';
 
   my $filename = File::Locate::Iterator->default_database_file;
@@ -55,20 +71,7 @@ use File::Locate::Iterator;
   print "$fm2\n";
   exit 0;
 }
-{
-  my $count = 0;
-  my $it = File::Locate::Iterator->new (globs => ['*.c','/z*'],
-                                       );
-  print "regexp: ",(defined $it->{'regexp'} ? $it->{'regexp'} : 'undef'),"\n";
-  print "match: ",(defined $it->{'match'} ? $it->{'match'} : 'undef'),"\n";
 
-  while (defined (my $str = $it->next)) {
-    print "got '$str'\n";
-    # print "  current ",$it->current,"\n";
-    last if $count++ > 3;
-  }
-  exit 0;
-}
 
 {
   require File::FnMatch;

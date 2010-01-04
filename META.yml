@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Locate-Iterator
-version:            6
+version:            7
 abstract:           Read "locate" database file with an iterator.
 author:
     - Kevin Ryde <user42@zip.com.au>
@@ -11,10 +11,10 @@ configure_requires:
 build_requires:
     ExtUtils::MakeMaker:  0
 requires:
-    File::FnMatch:  0
-    List::Util:     0
-    perl:           5.006
-    Test::More:     0
+    constant::defer:  0
+    File::FnMatch:    0
+    perl:             5.006
+    Test::More:       0
 resources:
     homepage:  http://user42.tuxfamily.org/file-locate-iterator/index.html
     license:   http://www.gnu.org/licenses/gpl.html

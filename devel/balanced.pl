@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License along
 # with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
+use strict;
+use warnings;
 use Regexp::Common qw /balanced/;
 print $RE{balanced}{-begin=>'b'}{-end=>'e'};
 exit 0;

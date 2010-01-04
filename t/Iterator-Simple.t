@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2009 Kevin Ryde
+# Copyright 2009, 2010 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -32,7 +32,7 @@ require Iterator::Simple::Locate;
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 6;
+my $want_version = 7;
 cmp_ok ($Iterator::Simple::Locate::VERSION, '>=', $want_version,
         'VERSION variable');
 cmp_ok (Iterator::Simple::Locate->VERSION,  '>=', $want_version,

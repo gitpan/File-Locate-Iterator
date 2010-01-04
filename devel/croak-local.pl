@@ -1,6 +1,4 @@
-#!/usr/bin/perl
-
-# Copyright 2009 Kevin Ryde.
+# Copyright 2009, 2010 Kevin Ryde.
 #
 # This file is part of File-Locate-Iterator.
 #
@@ -20,27 +18,36 @@
 
 use strict;
 use warnings;
-use Devel::Peek;
-use FindBin;
-# use lib::abs $FindBin::Bin;
-use File::Spec;
+use Carp;
+use File::Locate::Iterator;
 
-use File::Map 'map_file';
 
-my $filename;
-$filename = '/tmp/x';
-$filename = '/proc/meminfo';
-$filename = File::Spec->devnull;
-$filename = '/dev/zero';
+$SIG{'__DIE__'} = sub {
+  my ($msg) = @_;
+  print STDERR "DIE RS is $/\n";
+  print STDERR "  msg: $msg";
+  exit 1;
+};
 
-my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
-    $atime,$mtime,$ctime,$blksize,$blocks)
-  = stat($filename);
-printf "%o\n", $mode;
+{
+  my $header = "\0LOCATE02\0";
+  require IO::String;
+  my $fh = IO::String->new ($header . "\000");
+  my $it = File::Locate::Iterator->new (database_fh => $fh,
+                                        use_mmap => 0,
+                                       );
+  $it->next;
+  exit 0;
+}
 
-my $str;
-map_file ($str, $filename, '<', 0, 0);
-print "length ",length($str),"\n";
 
-# open
-exit 0;
+{
+  {
+    local $/ = "x";
+    goto CROAK;
+    croak "hello";
+  }
+ CROAK:
+  croak "hello";
+  exit 0;
+}

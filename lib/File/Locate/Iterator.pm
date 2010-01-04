@@ -1,4 +1,4 @@
-# Copyright 2009 Kevin Ryde.
+# Copyright 2009, 2010 Kevin Ryde.
 #
 # This file is part of File-Locate-Iterator.
 #
@@ -22,11 +22,10 @@ use 5.006;  # for qr//, and open anon handles
 use strict;
 use warnings;
 use Carp;
-use File::FnMatch;
 use vars ('$VERSION', '@ISA');
 
 BEGIN {
-  $VERSION = 6;
+  $VERSION = 7;
 }
 
 use constant DEBUG => 0;
@@ -34,51 +33,17 @@ use constant DEBUG => 0;
 use constant default_database_file => '/var/cache/locate/locatedb';
 use constant default_use_mmap      => 0;
 
-use constant _HEADER => "\0LOCATE02\0";
-use constant _TRUE => 1;
+my $header = "\0LOCATE02\0";
 
-my %mmap_acceptable_layers = (unix => 1, perlio => 1, mmap => 1);
-
-sub _bad_mmap_layer {
-  my ($fh) = @_;
-  my $bad_layer;
-  eval {
-    require PerlIO; # new in perl 5.8
-    foreach my $layer (PerlIO::get_layers ($fh)) {
-      if (! $mmap_acceptable_layers{$layer}) {
-        if (DEBUG) { print STDERR "layer '$layer' no good for mmap\n"; }
-        $bad_layer = $layer;
-        last;
-      }
-    }
-  };
-  return $bad_layer;
-}
-
-sub _mmap_size_excessive {
-  my ($fh) = @_;
-  if (File::Locate::Iterator::FileMap->find($fh)) {
-    # if already mapped then not excessive
-    return 0;
+BEGIN {
+  require DynaLoader;
+  @ISA = ('DynaLoader');
+  if (eval { bootstrap File::Locate::Iterator $VERSION }) {
+    if (DEBUG) { print "FLI next() from xs\n"; }
+  } else {
+    if (DEBUG) { print "FLI next() in perl (XS didn't load -- $@)\n"; }
+    require File::Locate::Iterator::PP;
   }
-
-  # - Pointer size times 8 bits, then 2**N for total pointer address space,
-  #   eg. 2**32 for a 32-bit system.
-  # - Then often only 1/2 or 1/4 of that available for data, so * 0.25,
-  #   eg. 1Gbyte on a 32-bit system
-  # - Then cap ourselves at 1/5 of that likely space, eg. 200Mbyte on a
-  #   32-bit system.
-  # 
-  require Config;
-  my $limit = (2 ** (8 * $Config::Config{'ptrsize'})) * 0.25 * 0.2;
-
-  my $prosp = File::Locate::Iterator::FileMap::_total_space (-s $fh);
-  if (DEBUG) {
-    print "mmap size limit $limit\n";
-    print "  file size ",-s $fh," for new total $prosp\n";
-  }
-  if (DEBUG) { if ($prosp > $limit) { print "  too big\n"; } }
-  return ($prosp > $limit);
 }
 
 sub new {
@@ -130,10 +95,13 @@ sub new {
     my $fh = $options{'database_fh'};
     if (defined $fh) {
       if ($use_mmap) {
-        if (my $layer = _any_bad_layer($fh)) {
+        if (defined (my $layer = _bad_layer($fh))) {
           if ($use_mmap eq '1') {
             croak "database_fh layer '$layer' no good for mmap";
           }
+          $use_mmap = 0;
+        } elsif ($use_mmap eq 'if_sensible' && _have_mmap_layer($fh)) {
+          # if already a :mmap perlio layer don't mmap again
           $use_mmap = 0;
         }
       }
@@ -147,26 +115,34 @@ sub new {
     }
 
     if ($use_mmap eq 'if_sensible') {
-      if (_mmap_size_excessive($fh)) {
-        $use_mmap = 0;
-      } else {
-        $use_mmap = 'if_possible';
-      }
+      $use_mmap = (_mmap_size_excessive($fh)
+                   ? 0
+                   : 'if_possible');
     }
 
     if ($use_mmap) {
-      if (DEBUG) { print "attempt mmap $fh size ",-s $fh,"\n"; }
+      if (DEBUG) { print "attempt mmap $fh size ",(-s $fh),"\n"; }
 
-      # There's many ways an mmap can fail.  Even an ordinary readable file
-      # can fail on linux kernel post 2.6.12 (or some such) if it's empty,
-      # since it's not possible to mmap length==0 there.
+      # There's many ways an mmap can fail, just chuck an eval on FileMap /
+      # File::Map it to catch them all.
+      # - An ordinary readable file of length zero may fail per POSIX, and
+      #   that's how it is in linux kernel post 2.6.12.  However File::Map
+      #   0.20 takes care of returning an empty string for that.
+      # - A char special usually gives 0 for its length, even for instance
+      #   linux kernel special files like /proc/meminfo.  Char specials can
+      #   often be mapped perfectly well, but without a length don't know
+      #   how much to look at.  For that reason if_possible restricts to
+      #   ordinary files, though forced use_mmap=>1 just goes ahead anyway.
+      #
       if ($use_mmap eq 'if_possible') {
-        if (! eval { $self->{'fm'}
-                       = File::Locate::Iterator::FileMap->get($fh) }) {
-          if (DEBUG) { print "mmap failed: $@\n"; }
+        if (-f $fh) {
+          if (! eval { $self->{'fm'}
+                         = File::Locate::Iterator::FileMap->get($fh) }) {
+            if (DEBUG) { print "mmap failed: $@\n"; }
+          }
+        } else {
+          $self->{'fm'} = File::Locate::Iterator::FileMap->get($fh);
         }
-      } else {
-        $self->{'fm'} = File::Locate::Iterator::FileMap->get($fh);
       }
     }
     if ($self->{'fm'}) {
@@ -179,21 +155,20 @@ sub new {
 
   if (exists $self->{'mref'}) {
     my $mref = $self->{'mref'};
-    my $header = _HEADER;
-    unless ($$mref =~ /\Q$header/) {
-    BAD_HEADER:
-      undef $self->{'entry'};
-      croak "Invalid database contents (no LOCATE02 header)";
-    }
-    $self->{'pos'} = length(_HEADER);
+    unless ($$mref =~ /^\Q$header/o) { goto &_ERROR_BAD_HEADER }
+    $self->{'pos'} = length($header);
   } else {
-    my $header = '';
-    read $self->{'fh'}, $header, length(_HEADER);
-    if ($header ne _HEADER) { goto BAD_HEADER; }
+    my $got = '';
+    read $self->{'fh'}, $got, length($header);
+    if ($got ne $header) { goto &_ERROR_BAD_HEADER }
   }
 
   return $self;
 }
+sub _ERROR_BAD_HEADER {
+  croak 'Invalid database contents (no LOCATE02 header)';
+}
+
 
 # return true if mmap is in use
 # (an actual mmap, not the slightly similar 'database_str' option)
@@ -203,152 +178,62 @@ sub _using_mmap {
   return defined $self->{'fm'};
 }
 
-BEGIN {
-  require DynaLoader;
-  @ISA = ('DynaLoader');
-  if (eval { bootstrap File::Locate::Iterator $VERSION }) {
-    if (DEBUG) { print "FLI next() from xs\n"; }
-
-  } else {
-    if (DEBUG) { print "FLI next() in perl (XS didn't load -- $@)\n"; }
-
-    *next = sub {
-      my ($self) = @_;
-
-      my $sharelen = $self->{'sharelen'};
-      my $entry = $self->{'entry'};
-      my $regexp = $self->{'regexp'};
-      my $globs = $self->{'globs'};
-
-      if (exists $self->{'mref'}) {
-        my $mref = $self->{'mref'};
-        my $pos = $self->{'pos'};
-      MREF_LOOP: for (;;) {
-          if (DEBUG >= 2) { printf "pos %#X\n", $pos; }
-          if ($pos >= length ($$mref)) {
-            undef $self->{'entry'};
-            return; # end of file
-          }
-
-          my ($adjshare) = unpack 'c', substr ($$mref, $pos++, 1);
-          if ($adjshare == -128) {
-            if (DEBUG >= 2) { printf "  2byte pos %#X\n", $pos; }
-            # print ord(substr ($$mref,$pos,1)),"\n";
-            # print ord(substr ($$mref,$pos+1,1)),"\n";
-
-            if ($pos+2 > length ($$mref)) {
-            UNEXPECTED_EOF:
-              undef $self->{'entry'};
-              croak 'Invalid database contents (unexpected EOF)';
-            }
-
-            # for perl 5.10 up could use 's>' for signed 16-bit big-endian pack,
-            # instead of getting unsigned and stepping down
-            ($adjshare) = unpack 'n', substr ($$mref, $pos, 2);
-            if ($adjshare >= 32768) { $adjshare -= 65536; }
-
-            $pos += 2;
-          }
-          if (DEBUG >= 2) { print "adjshare $adjshare\n"; }
-          $sharelen += $adjshare;
-          # print "share now $sharelen\n";
-          if ($sharelen < 0 || $sharelen > length($entry)) {
-          BAD_SHARE:
-            undef $self->{'entry'};
-            croak "Invalid database contents (bad share length $sharelen)";
-          }
-
-          my $end = index ($$mref, "\0", $pos);
-          # print "$pos to $end\n";
-          if ($end < 0) { goto UNEXPECTED_EOF; }
-
-          $entry = (substr($entry,0,$sharelen)
-                    . substr ($$mref, $pos, $end-$pos));
-          $pos = $end + 1;
-
-          if ($regexp) {
-            last if $entry =~ $regexp;
-          } elsif (! $globs) {
-            last;
-          }
-          if ($globs) {
-            foreach my $glob (@$globs) {
-              last MREF_LOOP if File::FnMatch::fnmatch($glob,$entry)
-          }
-        }
-        }
-        $self->{'pos'} = $pos;
-
-      } else {
-        local $/ = "\0"; # readline() to \0
-
-        my $fh = $self->{'fh'};
-        if (DEBUG) { printf "pos %#x\n",tell($fh); }
-      IO_LOOP: for (;;) {
-          my $adjshare;
-          unless (my $got = read $fh, $adjshare, 1) {
-            if (defined $got) {
-              undef $self->{'entry'};
-              return; # EOF
-            }
-          ERROR_READING:
-            undef $self->{'entry'};
-            croak "Error reading database: $!";
-          }
-
-          ($adjshare) = unpack 'c', $adjshare;
-          if ($adjshare == -128) {
-            my $got = read $fh, $adjshare, 2;
-            if (! defined $got) { goto ERROR_READING; }
-            if ($got != 2) { goto UNEXPECTED_EOF; }
-
-            # for perl 5.10 up could use 's>' for signed 16-bit big-endian
-            # pack, instead of getting unsigned and stepping down
-            ($adjshare) = unpack 'n', $adjshare;
-            if ($adjshare >= 32768) { $adjshare -= 65536; }
-          }
-          if (DEBUG) { print "adjshare $adjshare\n"; }
-
-          $sharelen += $adjshare;
-          if (DEBUG) { print "share now $sharelen\n"; }
-          if ($sharelen < 0 || $sharelen > length($entry)) {
-            goto BAD_SHARE;
-          }
-
-          my $part;
-          {
-            # perlfunc.pod of 5.10.0 for readline() says you can clear $!
-            # then check it afterwards for an error indication, but that's
-            # wrong, $! ends up set to EBADF when filling the PerlIO buffer,
-            # which means if the readline crosses a 1024 byte boundary
-            # (something in attempting a fast gets then falling back ...)
-
-            $part = readline $fh;
-            if (! defined $part) { goto UNEXPECTED_EOF; }
-
-            if (DEBUG) { print "part '$part'\n"; }
-            chomp $part or goto UNEXPECTED_EOF;
-          }
-
-          $entry = substr($entry,0,$sharelen) . $part;
-
-          if ($regexp) {
-            last if $entry =~ $regexp;
-          } elsif (! $globs) {
-            last;
-          }
-          if ($globs) {
-            foreach my $glob (@$globs) {
-              last IO_LOOP if File::FnMatch::fnmatch($glob,$entry)
-          }
-        }
-        }
-      }
-
-      $self->{'sharelen'} = $sharelen;
-      return ($self->{'entry'} = $entry);
+# return true if $fh has an ":mmap" layer
+sub _have_mmap_layer {
+  my ($fh) = @_;
+  my $ret;
+  eval {
+    require PerlIO; # new in perl 5.8
+    foreach my $layer (PerlIO::get_layers ($fh)) {
+      if ($layer eq 'mmap') { $ret = 1; last; }
     }
+  };
+  return $ret;
+}
+
+# return the name of a layer bad for mmap, or undef if all ok
+my %acceptable_layers = (unix => 1, perlio => 1, mmap => 1);
+sub _bad_layer {
+  my ($fh) = @_;
+  my $bad_layer;
+  eval {
+    require PerlIO; # new in perl 5.8
+    foreach my $layer (PerlIO::get_layers ($fh)) {
+      if (! $acceptable_layers{$layer}) {
+        if (DEBUG) { print STDERR "layer '$layer' no good for mmap\n"; }
+        $bad_layer = $layer;
+        last;
+      }
+    }
+  };
+  return $bad_layer;
+}
+
+# return true if mmapping $fh would be an excessive cumulative size
+sub _mmap_size_excessive {
+  my ($fh) = @_;
+  if (File::Locate::Iterator::FileMap->find($fh)) {
+    # if already mapped then not excessive
+    return 0;
   }
+
+  # - Pointer size times 8 bits, then 2**N for total pointer address space,
+  #   eg. 2**32 for a 32-bit system.
+  # - Then often only 1/2 or 1/4 of that available for data, so * 0.25,
+  #   eg. 1Gbyte on a 32-bit system
+  # - Then cap ourselves at 1/5 of that likely space, eg. 200Mbyte on a
+  #   32-bit system.
+  # 
+  require Config;
+  my $limit = (2 ** (8 * $Config::Config{'ptrsize'})) * 0.25 * 0.2;
+
+  my $prosp = File::Locate::Iterator::FileMap::_total_space (-s $fh);
+  if (DEBUG) {
+    print "mmap size limit $limit\n";
+    print "  file size ",(-s $fh)," for new total $prosp\n";
+  }
+  if (DEBUG) { if ($prosp > $limit) { print "  too big\n"; } }
+  return ($prosp > $limit);
 }
 
 # Not yet documented, likely worthwhile as long as it works properly ...
@@ -363,6 +248,9 @@ sub _current {
   my ($self) = @_;
   return $self->{'entry'};
 }
+
+
+#------------------------------------------------------------------------------
 
 package File::Locate::Iterator::FileMap;
 use strict;
@@ -410,31 +298,25 @@ sub DESTROY {
   delete $cache{$self->{'key'}};
 }
 
+use constant::defer _PAGESIZE => sub {
+  require POSIX;
+  my $pagesize = eval { POSIX::sysconf (POSIX::_SC_PAGESIZE()) } || -1;
+  return ($pagesize > 0 ? $pagesize : 1024);
+};
+
 # return the total bytes used by mmaps here plus prospective further $space
 sub _total_space {
   my ($space) = @_;
   if (DEBUG) { print "total space of $space + ",values %cache,"\n"; }
-  $space = _round_up_page_size($space);
+  $space = _round_up_pagesize($space);
   foreach my $self (values %cache) {
-    $space += _round_up_page_size (length (${$self->mmap_ref}));
+    $space += _round_up_pagesize (length (${$self->mmap_ref}));
   }
   return $space;
 }
-sub _round_up_page_size {
+sub _round_up_pagesize {
   my ($n) = @_;
-  my $page_size = _page_size();
-  return int ($n + $page_size - 1 / $page_size);
-}
-{
-  my $page_size;
-  sub _page_size {
-    if (! defined $page_size) {
-      require POSIX;
-      $page_size = eval { POSIX::sysconf (POSIX::_SC_PAGESIZE()) } || -1;
-      if ($page_size <= 0) { $page_size = 1024; }
-    }
-    return $page_size;
-  }
+  return int ($n + _PAGESIZE() - 1 / _PAGESIZE());
 }
 
 1;
@@ -593,7 +475,7 @@ http://user42.tuxfamily.org/file-locate-iterator/index.html
 
 =head1 COPYRIGHT
 
-Copyright 2009 Kevin Ryde
+Copyright 2009, 2010 Kevin Ryde
 
 File-Locate-Iterator is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published by

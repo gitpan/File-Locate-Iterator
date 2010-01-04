@@ -1,4 +1,4 @@
-Copyright 2009 Kevin Ryde
+Copyright 2009, 2010 Kevin Ryde
 
 This file is part of File-Locate-Iterator.
 
@@ -16,6 +16,9 @@ You should have received a copy of the GNU General Public License along
 with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
+
+Version 7, January 2010
+    - workaround incompatible changes in perl 5.11 goto
 
 Version 6, December 2009
     - oops, Test::More::explain() is new

@@ -18,17 +18,19 @@
 # with File-Locate-Iterator; see the file COPYING.  Failing that, go to
 # <http://www.gnu.org/licenses/>.
 
+use 5.006;
 use strict;
 use warnings;
 use Devel::TimeThis;
 use Devel::Peek;
+use File::Spec;
 use FindBin;
 # use lib::abs $FindBin::Bin;
 
 use Sys::Mmap ();
 use File::Map ();
 
-#my $filename = '/dev/null';
+#my $filename = File::Spec->devnull;
 #my $filename = '/tmp/x';
 my $filename = 't/samp.locatedb';
 

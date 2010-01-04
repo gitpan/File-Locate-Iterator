@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2009 Kevin Ryde
+# Copyright 2009, 2010 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -21,12 +21,12 @@ use 5.006;
 use strict;
 use warnings;
 use File::Locate::Iterator;
-use Test::More tests => 64;
+use Test::More tests => 118;
 
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 6;
+my $want_version = 7;
 cmp_ok ($File::Locate::Iterator::VERSION, '>=', $want_version,
         'VERSION variable');
 cmp_ok (File::Locate::Iterator->VERSION,  '>=', $want_version,
@@ -174,6 +174,9 @@ diag "Test samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
                     ['no nul terminator',
                      'unexpected EOF',
                      $header . "\0foo" ],
+                    ['header after garbage',
+                     'no LOCATE02 header',
+                     'xyz' . $header ],
 
                     ['long count marker then eof',
                      'unexpected EOF',
@@ -228,8 +231,12 @@ diag "Test samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
     foreach my $use_mmap (0, 'if_sensible', 'if_possible') {
       my $got_err;
       my $mmap_used = ($use_mmap ? 'no, failed' : 0);
-      my $it;
+      my ($it, $rs);
       if (eval {
+        local $SIG{'__DIE__'} = sub {
+          $rs = $/;
+          # and continue to usual die handling
+        };
         $it = File::Locate::Iterator->new (database_file => $filename,
                                            use_mmap => $use_mmap);
         if (exists $it->{'mref'}) {
@@ -242,7 +249,10 @@ diag "Test samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
       } else {
         $got_err = $@;
       }
-      like ($got_err, "/$want_err/", "$name, mmap_used=$mmap_used");
+      like ($got_err, "/$want_err/",
+            "$name, mmap_used=$mmap_used");
+      is ($rs, $orig_RS,
+          "$name, input record separator in __DIE__ handler");
     }
   }
   is ($/, $orig_RS, 'input record separator unchanged');
