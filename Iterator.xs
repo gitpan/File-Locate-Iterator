@@ -81,7 +81,6 @@ MODULE = File::Locate::Iterator   PACKAGE = File::Locate::Iterator
 
 void
 next (SV *self)
-PROTOTYPE:
 CODE:
   {
     HV *h;
@@ -247,13 +246,23 @@ CODE:
         DEBUG1 (printf ("adj %"IVdf" %#"UVxf"\n", adj, adj));
 
         sharelen += adj;
-        DEBUG1 (printf ("sharelen %"IVdf" %#"UVxf"\n", sharelen, sharelen));
+        DEBUG1 (printf ("sharelen %"IVdf" %#"UVxf"  SvCUR %d utf8 %d\n",
+                        sharelen, sharelen,
+                        SvCUR(entry), SvUTF8(entry)));
 
         if (sharelen < 0 || sharelen > SvCUR(entry)) {
           sv_setpv (entry, NULL);
           croak ("Invalid database contents (bad share length %"IVdf")",
                  sharelen);
         }
+
+        /* sv_gets() in perl 5.10.1 must have "append" equal to SvCUR(sv).
+           On a ":perlio" buffered handle the append parameter is an offset
+           into the sv.  But on an unbuffered handle, meaning anything
+           without the "fast" access read stuff, the append parameter is a
+           flag to do sv_catpvn() instead of sv_setpvn().  Truncating the
+           string here with SvCUR_set() allows either way.  */
+        SvCUR_set (entry, sharelen);
 
         gets_ret = sv_gets (entry, fp, sharelen);
         if (gets_ret == NULL) goto UNEXPECTED_EOF;

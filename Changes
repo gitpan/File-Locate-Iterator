@@ -17,6 +17,10 @@ with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 8, January 2010
+    - use mmap when available
+    - fix for reading unbuffered handle
+
 Version 7, January 2010
     - workaround incompatible changes in perl 5.11 goto
 

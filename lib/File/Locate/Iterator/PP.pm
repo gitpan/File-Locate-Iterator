@@ -23,7 +23,7 @@ use strict;
 use warnings;
 use Carp;
 use File::FnMatch;
-    
+
 sub _UNEXPECTED_EOF {
   my ($self) = @_;
   undef $self->{'entry'};

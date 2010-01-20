@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2009 Kevin Ryde
+# Copyright 2009, 2010 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -22,10 +22,70 @@ use strict;
 use warnings;
 use File::Locate::Iterator;
 
+
+
 {
+  my $filename = 't/samp.locatedb';
+  open MYHANDLE, '<', $filename
+    or die "cannot open: $!";
+  my $it = File::Locate::Iterator->new (database_fh => \*MYHANDLE,
+                                        use_mmap => 'if_possible');
+  while (defined (my $str = $it->next)) {
+    print "got '$str'\n";
+  }
+  close MYHANDLE;
+  exit 0;
+}
+
+{
+  my $str;
+  {
+    my $filename = 't/samp.locatedb';
+    open my $fh, '<', $filename
+      or die "oops, cannot open $filename: $!";
+    binmode ($fh)
+      or die "oops, cannot set binary mode on $filename";
+    {
+      local $/ = undef; # slurp
+      $str = <$fh>;
+    }
+    close $fh
+      or die "Error reading $filename: $!";
+  }
+
+  open my $fh, '<', \$str
+    or die "oops, cannot open string";
+  print "fileno ",fileno($fh),"\n";
+  my $it = File::Locate::Iterator->new (database_fh => $fh,
+                                        use_mmap => 'if_possible');
+  print "using_mmap: ",$it->_using_mmap,"\n";
+
+  while (defined (my $str = $it->next)) {
+    print "got '$str'\n";
+  }
+  exit 0;
+}
+
+
+
+{
+  my $filename = 't/samp.locatedb';
+  # open my $fh, '<', $filename or die;
+  open my $fh, '<', $filename or die;
+#  binmode($fh) or die;
+  require PerlIO;
+  { local $,=' ';
+    print PerlIO::get_layers($fh, details=>1),"\n";
+  }
+  exit 0;
+}
+
+{
+  my $filename = 't/samp.locatedb';
   my $count = 0;
-  my $it = File::Locate::Iterator->new (globs => ['*.c','/z*'],
-                                        use_mmap => 1,
+  my $it = File::Locate::Iterator->new (# globs => ['*.c','/z*'],
+                                        use_mmap => 0,
+                                        database_file => $filename,
                                        );
   print "fm: ",(defined $it->{'fm'} ? $it->{'fm'} : 'undef'),"\n";
   print "regexp: ",(defined $it->{'regexp'} ? $it->{'regexp'} : 'undef'),"\n";
@@ -38,6 +98,21 @@ use File::Locate::Iterator;
   }
   exit 0;
 }
+
+
+{
+  my $filename = 't/samp.locatedb';
+  open my $fh, '<', $filename or die;
+  require PerlIO;
+  my $fm = File::Locate::Iterator::FileMap->get($fh);
+  print "$fm\n";
+  my $fm2 = File::Locate::Iterator::FileMap->get($fh);
+  print "$fm2\n";
+  exit 0;
+}
+
+
+
 {
   my $use_mmap = 'if_possible';
 
@@ -61,17 +136,6 @@ use File::Locate::Iterator;
 }
 
 
-{
-  my $filename = 't/samp.locatedb';
-  open my $fh, '<', $filename or die;
-  require PerlIO;
-  my $fm = File::Locate::Iterator::FileMap->get($fh);
-  print "$fm\n";
-  my $fm2 = File::Locate::Iterator::FileMap->get($fh);
-  print "$fm2\n";
-  exit 0;
-}
-
 
 {
   require File::FnMatch;
@@ -80,11 +144,13 @@ use File::Locate::Iterator;
 }
 
 {
+  require File::Spec;
+
   # my $use_mmap = 1;
   my $use_mmap = 'if_possible';
 
    my $filename = '/tmp/frcode.out';
-  # my $filename = '/dev/null';
+  # my $filename = File::Spec->devnull;
 
   open my $fh, '>', '/tmp/frcode.in' or die;
   print $fh <<'HERE' or die;

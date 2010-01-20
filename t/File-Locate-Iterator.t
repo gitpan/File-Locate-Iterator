@@ -21,15 +21,15 @@ use 5.006;
 use strict;
 use warnings;
 use File::Locate::Iterator;
-use Test::More tests => 118;
+use Test::More tests => 92;
 
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 7;
-cmp_ok ($File::Locate::Iterator::VERSION, '>=', $want_version,
+my $want_version = 8;
+cmp_ok ($File::Locate::Iterator::VERSION, '==', $want_version,
         'VERSION variable');
-cmp_ok (File::Locate::Iterator->VERSION,  '>=', $want_version,
+cmp_ok (File::Locate::Iterator->VERSION,  '==', $want_version,
         'VERSION class method');
 { ok (eval { File::Locate::Iterator->VERSION($want_version); 1 },
       "VERSION class check $want_version");
@@ -37,9 +37,19 @@ cmp_ok (File::Locate::Iterator->VERSION,  '>=', $want_version,
   ok (! eval { File::Locate::Iterator->VERSION($check_version); 1 },
       "VERSION class check $check_version");
 }
+{
+  my $empty_locatedb = "\0LOCATE02\0";
+  my $it = File::Locate::Iterator->new (database_str => $empty_locatedb);
+  cmp_ok ($it->VERSION, '==', $want_version, 'VERSION object method');
+  ok (eval { $it->VERSION($want_version); 1 },
+      "VERSION object check $want_version");
+  my $check_version = $want_version + 1000;
+  ok (! eval { $it->VERSION($check_version); 1 },
+      "VERSION object check $check_version");
+}
 
 #-----------------------------------------------------------------------------
-# samp.txt / samp.locatedb
+# samp.zeros / samp.locatedb
 
 sub no_inf_loop {
   my ($name) = @_;
@@ -49,33 +59,62 @@ sub no_inf_loop {
   };
 }
 
-sub slurp_lines {
-  my ($filename) = @_;
-  open my $fh, '<', $filename or die "Cannot open $filename: $!";
-  my @ret = <$fh>;
-  close $fh or die "Error reading $filename: $!";
-  foreach (@ret) { chomp }
-  return @ret;
-}
 require FindBin;
 require File::Spec;
-my $samp_txt      = File::Spec->catfile ($FindBin::Bin, 'samp.txt');
+my $samp_zeros    = File::Spec->catfile ($FindBin::Bin, 'samp.zeros');
 my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
-diag "Test samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
+diag "Test samp_zeros=$samp_zeros, samp_locatedb=$samp_locatedb";
+
+
+my @samp_zeros;
 {
-  my @samp_txt = slurp_lines ($samp_txt);
+  open my $fh, '<', $samp_zeros
+    or die "oops, cannot open $samp_zeros: $!";
+  binmode($fh)
+    or die "oops, cannot set binary mode on $samp_zeros";
+  {
+    local $/ = "\0";
+    @samp_zeros = <$fh>;
+    foreach (@samp_zeros) { chomp }
+  }
+  close $fh
+    or die "Error reading $samp_zeros: $!";
+}
+
+my $samp_locatedb_str;
+{
+  open my $fh, '<', $samp_locatedb
+    or die "oops, cannot open $samp_locatedb: $!";
+  binmode ($fh)
+    or die "oops, cannot set binary mode on $samp_locatedb";
+  {
+    local $/ = undef; # slurp
+    $samp_locatedb_str = <$fh>;
+  }
+  close $fh
+    or die "Error reading $samp_locatedb: $!";
+}
+
+my $have_open_string;
+if ($] >= 5.008) {
+  $have_open_string = eval { open my $fh, '<', \'nosuchfilename' };
+  if (! $have_open_string) { diag "no open string available -- $@"; }
+}
+
+
+{
   my $orig_RS = $/;
 
   {
     my $it = File::Locate::Iterator->new (database_file => $samp_locatedb);
-    my @want = @samp_txt;
+    my @want = @samp_zeros;
     my @got;
     my $noinfloop = no_inf_loop($samp_locatedb);
     while (defined (my $filename = $it->next)) {
       push @got, $filename;
       $noinfloop->();
     }
-    is_deeply (\@got, \@want, 'samp.locatedb');
+    is_deeply (\@got, \@want, 'samp.locatedb full');
   }
 
   # with 'glob'
@@ -83,13 +122,13 @@ diag "Test samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
     my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
                                           glob => '*.c');
     my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
-    my @want = grep {/\.c$/} @samp_txt;
+    my @want = grep {/\.c$/} @samp_zeros;
     my @got;
     while (defined (my $filename = $it->next)) {
       push @got, $filename;
       $noinfloop->();
     }
-    is_deeply (\@got, \@want, 'samp.locatedb');
+    is_deeply (\@got, \@want, 'samp.locatedb glob *.c');
   }
 
   # with 'regexp'
@@ -98,13 +137,13 @@ diag "Test samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
     my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
                                           regexp => $regexp);
     my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
-    my @want = grep {/$regexp/} @samp_txt;
+    my @want = grep {/$regexp/} @samp_zeros;
     my @got;
     while (defined (my $filename = $it->next)) {
       push @got, $filename;
       $noinfloop->();
     }
-    is_deeply (\@got, \@want, 'samp.locatedb');
+    is_deeply (\@got, \@want, 'samp.locatedb regexp /usr/tmp');
   }
 
   # with 'glob' and 'regexp'
@@ -114,27 +153,74 @@ diag "Test samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
                                           regexp => $regexp,
                                           glob => '*.c');
     my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
-    my @want = grep {/$regexp|\.c$/} @samp_txt;
+    my @want = grep {/$regexp|\.c$/} @samp_zeros;
     my @got;
     while (defined (my $filename = $it->next)) {
       push @got, $filename;
       $noinfloop->();
     }
-    is_deeply (\@got, \@want, 'samp.locatedb');
+    is_deeply (\@got, \@want, 'samp.locatedb regexp and glob');
   }
 
-  foreach my $use_mmap (0, 'if_sensible', 'if_possible') {
-    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
-                                          use_mmap => $use_mmap);
-    my $noinfloop = no_inf_loop("$samp_locatedb with use_mmap=$use_mmap");
-    my @want = @samp_txt;
-    my @got;
-    while (my ($filename) = $it->next) {
-      push @got, $filename;
-      $noinfloop->();
+  {
+    foreach my $use_mmap (0, 'if_possible') {
+
+      open my $fh_raw, '<:raw', $samp_locatedb
+        or die "oops, cannot open :raw $samp_locatedb";
+
+      my $fh_str;
+      my $database_fh_str;
+      if ($have_open_string) {
+        open $fh_str, '<', \$samp_locatedb_str
+          or die "oops, cannot open string";
+        $database_fh_str = [ 'database_fh string', database_fh => $fh_str ];
+      } else {
+        $database_fh_str = "open string not available";
+      }
+
+      open MYHANDLE, '<', $samp_locatedb
+        or die "oops, cannot open $samp_locatedb";
+      binmode (MYHANDLE)
+        or die "oops, cannot set binary mode on MYHANDLE";
+
+      foreach my $database
+        (['database_file',    database_file => $samp_locatedb],
+         ['database_fh ref',  database_fh => \*MYHANDLE],
+         ['database_fh :raw', database_fh => $fh_raw],
+         $database_fh_str) {
+      SKIP: {
+          ref $database
+            or skip $database, 1;
+          my ($database_desc, @database_option) = @$database;
+
+          my $desc = "$database_desc, use_mmap=$use_mmap";
+          diag $desc;
+
+          my $it = File::Locate::Iterator->new (@database_option,
+                                                use_mmap => $use_mmap);
+          my $noinfloop = no_inf_loop("$desc");
+          my @want = @samp_zeros;
+          my @got;
+          while (my ($filename) = $it->next) {
+            push @got, $filename;
+            $noinfloop->();
+          }
+
+          if (0) {
+            require Data::Dumper;
+            diag (Data::Dumper->new([\@samp_zeros],['samp_zeros'])
+                  ->Useqq(1)->Dump);
+            diag (Data::Dumper->new([\@got],['got'])
+                  ->Useqq(1)->Dump);
+          }
+          is_deeply (\@got, \@want,
+                     "samp.locatedb  $desc, using_mmap="
+                     . ($it->_using_mmap ? "yes" : "no"));
+        }
+      }
+
+      close MYHANDLE;
     }
-    is_deeply (\@got, \@want,
-               "samp.locatedb  use_mmap=$use_mmap using_mmap=@{[$it->_using_mmap]}");
   }
   is ($/, $orig_RS, 'input record separator unchanged');
 }
@@ -228,7 +314,7 @@ diag "Test samp_txt=$samp_txt, samp_locatedb=$samp_locatedb";
         or die "Cannot write file $filename: $!";
     }
 
-    foreach my $use_mmap (0, 'if_sensible', 'if_possible') {
+    foreach my $use_mmap (0, 'if_possible') {
       my $got_err;
       my $mmap_used = ($use_mmap ? 'no, failed' : 0);
       my ($it, $rs);

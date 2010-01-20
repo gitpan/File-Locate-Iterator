@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2009 Kevin Ryde
+# Copyright 2009, 2010 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -73,7 +73,7 @@ MyMakeMakerExtras::WriteMakefile
              => 'http://user42.tuxfamily.org/file-locate-iterator/index.html',
            },
         recommends
-        => { 'File::Map'     => 0.20, # version 0.20 for empty files
+        => { 'File::Map' => 0.20, # version 0.20 for empty files
            },
         optional_features
         => { maximum_examples
@@ -108,7 +108,7 @@ sub MY::postamble {
   my ($makemaker) = @_;
   return MyMakeMakerExtras::postamble ($makemaker) . <<'HERE';
 
-t/samp.locatedb: t/samp.txt
-	/usr/lib/locate/frcode <t/samp.txt >t/samp.locatedb
+t/samp.locatedb: t/samp.zeros
+	/usr/lib/locate/frcode -0 <t/samp.zeros >t/samp.locatedb
 HERE
 }

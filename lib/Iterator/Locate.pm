@@ -25,7 +25,7 @@ use File::Locate::Iterator;
 use base 'Iterator';
 use vars qw($VERSION);
 
-$VERSION = 7;
+$VERSION = 8;
 
 sub new {
   my $class = shift;
@@ -78,13 +78,13 @@ crunching entries from a locate database.
 =item C<< $it = Iterator::Locate->new (key=>value,...) >>
 
 Create and return a new C<Iterator::Locate> object.  Optional key/value
-arguments are passed to C<File::Locate::Iterator>.
+arguments are passed to C<File::Locate::Iterator-E<gt>new>.
 
 =back
 
 =head1 SEE ALSO
 
-L<Iterator>, L<File::Locate::Iterator>, L<Iterator::Simple::Locate>
+L<Iterator>, L<File::Locate::Iterator>
 
 =head1 HOME PAGE
 

@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 # Copyright 2009, 2010 Kevin Ryde.
 #
 # This file is part of File-Locate-Iterator.

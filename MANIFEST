@@ -8,6 +8,7 @@ debian/rules
 debian/watch
 devel/balanced.pl
 devel/bin-no-cc/cc
+devel/crlf.pl
 devel/croak-local.pl
 devel/glob.pl
 devel/GlobRegexp.pm
@@ -33,6 +34,7 @@ inc/my_pod2html
 inc/MyMakeMakerExtras.pm
 Iterator.xs
 lib/File/Locate/Iterator.pm
+lib/File/Locate/Iterator/FileMap.pm
 lib/File/Locate/Iterator/PP.pm
 lib/Iterator/Locate.pm
 lib/Iterator/Simple/Locate.pm
@@ -45,13 +47,15 @@ SIGNATURE
 t/0-META-read.t
 t/0-Test-DistManifest.t
 t/0-Test-Pod.t
-t/0-Test-Synopsis.t
 t/0-Test-YAML-Meta.t
+t/1-Test-Synopsis.t
 t/File-Locate-Iterator.t
+t/FileMap.t
 t/inc/MyTestHelpers.pm
 t/Iterator-Simple.t
 t/Iterator.t
+t/locate-program.t
 t/samp.locatedb
-t/samp.txt
+t/samp.zeros
 t/test-weaken.t
 META.yml                                 Module meta-data (added by MakeMaker)

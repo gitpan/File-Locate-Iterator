@@ -24,7 +24,7 @@ use warnings;
 use File::Locate::Iterator;
 use Iterator::Simple;
 
-our $VERSION = 7;
+our $VERSION = 8;
 
 sub new {
   my $class = shift;
@@ -61,7 +61,7 @@ crunch entries from the locate database.
 =item C<< $it = Iterator::Simple::Locate->new (key=>value,...) >>
 
 Create and return a new C<Iterator::Simple> object.  Optional key/value
-pairs as passed to C<File::Locate::Iterator>.
+pairs as passed to C<< File::Locate::Iterator->new >>.
 
 =item C<< $entry = $it->() >>
 
@@ -72,7 +72,7 @@ entries.
 
 =head1 SEE ALSO
 
-L<Iterator::Simple>, L<File::Locate::Iterator>, L<Iterator::Locate>
+L<Iterator::Simple>, L<File::Locate::Iterator>
 
 =head1 HOME PAGE
 

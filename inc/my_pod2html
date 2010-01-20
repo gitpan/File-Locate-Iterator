@@ -2,7 +2,7 @@
 
 # my_pod2html -- convert POD to HTML, with some mangling
 
-# Copyright 2009 Kevin Ryde
+# Copyright 2009, 2010 Kevin Ryde
 
 # my_pod2html is shared by several distributions.
 #
@@ -49,14 +49,14 @@ sub resolve_pod_link_by_table {
     if ($to =~ /^Glib::Ex::(SourceIds|SignalIds|FreezeNotify|TieProperties)/) {
       $url = "http://user42.tuxfamily.org/glib-ex-objectbits/$1.html";
     }
-    if ($to eq 'Gtk2::Ex::WidgetCursor') {
-      $url = "http://user42.tuxfamily.org/glib-ex-widgetcursor/WidgetCursor.html";
+    if ($to eq 'Gtk2::Ex::Widget'.'Cursor') {
+      $url = "http://user42.tuxfamily.org/glib-ex-widget'.'cursor/Widget'.'Cursor.html";
     }
-    if ($to eq 'Tie::TZ') {
-      $url = 'http://user42.tuxfamily.org/tie-tz/TZ.html';
+    if ($to eq 'Tie:'.':TZ') {
+      $url = 'http://user42.tuxfamily.org/tie-'.'tz/TZ.html';
     }
-    if ($to eq 'Time::TZ') {
-      $url = 'http://user42.tuxfamily.org/tie-tz/Time-TZ.html';
+    if ($to eq 'Time:'.':TZ') {
+      $url = 'http://user42.tuxfamily.org/tie-'.'tz/Time-'.'TZ.html';
     }
 
     if ($to =~ /^(Glib|Gtk2)($|::(?!Ex::))/) {

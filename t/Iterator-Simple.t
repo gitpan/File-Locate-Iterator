@@ -32,10 +32,10 @@ require Iterator::Simple::Locate;
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 7;
-cmp_ok ($Iterator::Simple::Locate::VERSION, '>=', $want_version,
+my $want_version = 8;
+cmp_ok ($Iterator::Simple::Locate::VERSION, '==', $want_version,
         'VERSION variable');
-cmp_ok (Iterator::Simple::Locate->VERSION,  '>=', $want_version,
+cmp_ok (Iterator::Simple::Locate->VERSION,  '==', $want_version,
         'VERSION class method');
 { ok (eval { Iterator::Simple::Locate->VERSION($want_version); 1 },
       "VERSION class check $want_version");
@@ -43,25 +43,34 @@ cmp_ok (Iterator::Simple::Locate->VERSION,  '>=', $want_version,
   ok (! eval { Iterator::Simple::Locate->VERSION($check_version); 1 },
       "VERSION class check $check_version");
 }
+# Iterator::Simple::Locate->new object isn't an actual subclass, just a
+# flavour of Iterator::Simple, so no object version number test
+
 
 #-----------------------------------------------------------------------------
-# samp.txt / samp.locatedb
+# samp.zeros / samp.locatedb
 
-sub slurp_lines {
+# read $filename and return a list of strings from it
+# each strings in $filename is terminated by a NUL \0
+# the \0s are not included in the return
+sub slurp_zeros {
   my ($filename) = @_;
   open my $fh, '<', $filename or die "Cannot open $filename: $!";
+  binmode($fh) or die "Cannot set binary mode";
+  local $/ = "\0";
   my @ret = <$fh>;
-  close $fh or die;
-  chomp foreach @ret;
+  close $fh or die "Error reading $filename: $!";
+  foreach (@ret) { chomp }
   return @ret;
 }
+
 {
   require FindBin;
   require File::Spec;
-  my $samp_txt      = File::Spec->catfile ($FindBin::Bin, 'samp.txt');
+  my $samp_zeros      = File::Spec->catfile ($FindBin::Bin, 'samp.zeros');
   my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
   my $it = Iterator::Simple::Locate->new (database_file => $samp_locatedb);
-  my @want = slurp_lines ($samp_txt);
+  my @want = slurp_zeros ($samp_zeros);
   my @got;
   while (defined (my $filename = $it->())) {
     push @got, $filename;
