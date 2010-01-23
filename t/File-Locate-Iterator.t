@@ -26,7 +26,7 @@ use Test::More tests => 92;
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 8;
+my $want_version = 9;
 cmp_ok ($File::Locate::Iterator::VERSION, '==', $want_version,
         'VERSION variable');
 cmp_ok (File::Locate::Iterator->VERSION,  '==', $want_version,
@@ -101,7 +101,6 @@ if ($] >= 5.008) {
   if (! $have_open_string) { diag "no open string available -- $@"; }
 }
 
-
 {
   my $orig_RS = $/;
 
@@ -165,8 +164,13 @@ if ($] >= 5.008) {
   {
     foreach my $use_mmap (0, 'if_possible') {
 
-      open my $fh_raw, '<:raw', $samp_locatedb
-        or die "oops, cannot open :raw $samp_locatedb";
+      my $database_fh_raw;
+      my $fh_raw;
+      if (eval { open $fh_raw, '<:raw', $samp_locatedb }) {
+        $database_fh_raw = ['database_fh :raw', database_fh => $fh_raw];
+      } else {
+        $database_fh_raw = "cannot open :raw $samp_locatedb";
+      }
 
       my $fh_str;
       my $database_fh_str;
@@ -186,7 +190,7 @@ if ($] >= 5.008) {
       foreach my $database
         (['database_file',    database_file => $samp_locatedb],
          ['database_fh ref',  database_fh => \*MYHANDLE],
-         ['database_fh :raw', database_fh => $fh_raw],
+         $database_fh_raw,
          $database_fh_str) {
       SKIP: {
           ref $database

@@ -256,12 +256,12 @@ CODE:
                  sharelen);
         }
 
-        /* sv_gets() in perl 5.10.1 must have "append" equal to SvCUR(sv).
-           On a ":perlio" buffered handle the append parameter is an offset
-           into the sv.  But on an unbuffered handle, meaning anything
-           without the "fast" access read stuff, the append parameter is a
-           flag to do sv_catpvn() instead of sv_setpvn().  Truncating the
-           string here with SvCUR_set() allows either way.  */
+        /* sv_gets() in perl 5.10.1 and earlier must have "append" equal to
+           SvCUR(sv).  The "fast" direct buffer access takes it as a byte
+           position to store to, but the plain read code takes it as a flag
+           to do sv_catpvn() instead of sv_setpvn().  This appears to be so
+           right back to 5.002 ("fast" access directly into a FILE*).  So
+           SvCUR_set() here to work in either case.  */
         SvCUR_set (entry, sharelen);
 
         gets_ret = sv_gets (entry, fp, sharelen);

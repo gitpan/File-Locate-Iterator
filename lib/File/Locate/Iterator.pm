@@ -23,7 +23,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = 8;
+our $VERSION = 9;
 our @ISA = ('DynaLoader');
 
 use constant default_use_mmap => 'if_sensible';
@@ -130,7 +130,8 @@ sub new {
                   : $class->default_database_file);
       if (DEBUG) { print "open database_file $file\n"; }
       # Crib note: '<:raw' means without :perlio buffering, whereas
-      # binmode() preserves that, assuming its in the $ENV{'PERLIO'} defaults
+      # binmode() preserves that, assuming it's in the $ENV{'PERLIO'}
+      # defaults.  Also :raw is not available in perl 5.6.
       open $fh, '<', $file
         or croak "Cannot open $file: $!";
       binmode($fh)

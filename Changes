@@ -17,6 +17,9 @@ with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 9, January 2010
+    - test script fix for :raw on perl 5.6
+
 Version 8, January 2010
     - use mmap when available
     - fix for reading unbuffered handle

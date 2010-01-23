@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Locate-Iterator
-version:            8
+version:            9
 abstract:           Read "locate" database file with an iterator.
 author:
     - Kevin Ryde <user42@zip.com.au>
@@ -33,6 +33,15 @@ optional_features:
         description:  Stuff used variously for development.
         requires:
             Devel::TimeThis:  0
+            File::Locate:     0
+            File::Map:        0
+            IO::String:       0
+            Perl6::Slurp:     0
+            PerlIO:           0
+            Regexp::Common:   0
+            Scalar::Util:     0
+            Sys::Mmap:        0
+            Text::Glob:       0
     maximum_examples:
         description:  Be able to run all the examples programs.
         requires:
@@ -50,6 +59,8 @@ optional_features:
             Test::DistManifest:  0
             Test::NoWarnings:    0
             Test::Pod:           1.00
+            Test::Synopsis:      0
+            Test::Weaken:        0
             Test::YAML::Meta:    0.13
             YAML:                0
             YAML::Syck:          0

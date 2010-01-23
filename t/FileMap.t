@@ -34,7 +34,7 @@ SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
 require File::Locate::Iterator::FileMap;
-my $want_version = 8;
+my $want_version = 9;
 cmp_ok ($File::Locate::Iterator::FileMap::VERSION, '==', $want_version,
         'VERSION variable');
 cmp_ok (File::Locate::Iterator::FileMap->VERSION,  '==', $want_version,

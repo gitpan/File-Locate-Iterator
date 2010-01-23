@@ -32,7 +32,7 @@ require Iterator::Locate;
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 8;
+my $want_version = 9;
 cmp_ok ($Iterator::Locate::VERSION, '==', $want_version,
         'VERSION variable');
 cmp_ok (Iterator::Locate->VERSION,  '==', $want_version,
