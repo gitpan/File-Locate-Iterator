@@ -17,6 +17,9 @@ with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 10, January 2010
+    - layer :stdio also ok for mmap
+
 Version 9, January 2010
     - test script fix for :raw on perl 5.6
 

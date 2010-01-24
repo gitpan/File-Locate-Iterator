@@ -22,7 +22,7 @@ use strict;
 use warnings;
 use Scalar::Util;
 
-our $VERSION = 9;
+our $VERSION = 10;
 
 use constant DEBUG => 0;
 
@@ -106,8 +106,12 @@ sub _have_mmap_layer {
   return $ret;
 }
 
+my %acceptable_layers = (unix   => 1,
+                         stdio  => 1,
+                         perlio => 1,
+                         mmap   => 1);
+
 # return the name of a layer bad for mmap, or undef if all ok
-my %acceptable_layers = (unix => 1, perlio => 1, mmap => 1);
 sub _bad_layer {
   my ($fh) = @_;
   my $bad_layer;

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Locate-Iterator
-version:            9
+version:            10
 abstract:           Read "locate" database file with an iterator.
 author:
     - Kevin Ryde <user42@zip.com.au>
@@ -38,7 +38,6 @@ optional_features:
             IO::String:       0
             Perl6::Slurp:     0
             PerlIO:           0
-            Regexp::Common:   0
             Scalar::Util:     0
             Sys::Mmap:        0
             Text::Glob:       0

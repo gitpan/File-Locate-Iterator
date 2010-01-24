@@ -23,7 +23,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = 9;
+our $VERSION = 10;
 our @ISA = ('DynaLoader');
 
 use constant default_use_mmap => 'if_sensible';

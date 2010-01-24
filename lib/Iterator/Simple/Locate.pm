@@ -24,7 +24,7 @@ use warnings;
 use File::Locate::Iterator;
 use Iterator::Simple;
 
-our $VERSION = 9;
+our $VERSION = 10;
 
 sub new {
   my $class = shift;

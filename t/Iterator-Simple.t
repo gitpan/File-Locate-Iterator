@@ -32,11 +32,9 @@ require Iterator::Simple::Locate;
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 9;
-cmp_ok ($Iterator::Simple::Locate::VERSION, '==', $want_version,
-        'VERSION variable');
-cmp_ok (Iterator::Simple::Locate->VERSION,  '==', $want_version,
-        'VERSION class method');
+my $want_version = 10;
+is ($Iterator::Simple::Locate::VERSION, $want_version, 'VERSION variable');
+is (Iterator::Simple::Locate->VERSION,  $want_version, 'VERSION class method');
 { ok (eval { Iterator::Simple::Locate->VERSION($want_version); 1 },
       "VERSION class check $want_version");
   my $check_version = $want_version + 1000;

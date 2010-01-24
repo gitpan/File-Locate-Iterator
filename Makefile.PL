@@ -101,7 +101,6 @@ MyMakeMakerExtras::WriteMakefile
                                 'File::Locate' => 0,
                                 'IO::String' => 0,
                                 'Perl6::Slurp' => 0,
-                                'Regexp::Common' => 0,
                                 'Scalar::Util' => 0,
                                 'Text::Glob' => 0,
                                 'File::Map' => 0,

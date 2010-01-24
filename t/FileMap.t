@@ -28,17 +28,17 @@ eval { require File::Map; 1 }
   or plan skip_all => 'File::Map not available';
 diag "File::Map version ",File::Map->VERSION;
 
-plan tests => 16;
+plan tests => 17;
 
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
 require File::Locate::Iterator::FileMap;
-my $want_version = 9;
-cmp_ok ($File::Locate::Iterator::FileMap::VERSION, '==', $want_version,
-        'VERSION variable');
-cmp_ok (File::Locate::Iterator::FileMap->VERSION,  '==', $want_version,
-        'VERSION class method');
+my $want_version = 10;
+is ($File::Locate::Iterator::FileMap::VERSION, $want_version,
+    'VERSION variable');
+is (File::Locate::Iterator::FileMap->VERSION, $want_version,
+    'VERSION class method');
 { ok (eval { File::Locate::Iterator::FileMap->VERSION($want_version); 1 },
       "VERSION class check $want_version");
   my $check_version = $want_version + 1000;
@@ -86,7 +86,7 @@ SKIP: {
   if ($nosuchlayer) {
     skip "No :mmap layer available", 1;
   }
-  diag "layers: ",PerlIO::get_layers($fh),"\n";
+  diag "mmap layers: ",PerlIO::get_layers($fh),"\n";
   ok (File::Locate::Iterator::FileMap::_have_mmap_layer($fh),
       '_have_mmap_layer identify :mmap layer');
 }
@@ -99,8 +99,9 @@ SKIP: {
     or die "oops, cannot open $samp_locatedb";
   binmode($fh)
     or die "oops, cannot set binary mode";
+  diag "binmode layers: ",PerlIO::get_layers($fh),"\n";
   is (File::Locate::Iterator::FileMap::_bad_layer($fh), undef,
-      '_bad_layer on plain binary open');
+      '_bad_layer on plain open + binmode');
 }
 
 SKIP: {
@@ -109,8 +110,22 @@ SKIP: {
 
   open my $fh, '<:crlf', $samp_locatedb
     or die "oops, cannot open $samp_locatedb with :crlf";
+  diag "crlf layers: ",PerlIO::get_layers($fh),"\n";
   is (File::Locate::Iterator::FileMap::_bad_layer($fh), 'crlf',
       '_bad_layer on :crlf');
+}
+
+SKIP: {
+  $have_PerlIO
+    or skip 'PerlIO module not available', 1;
+
+  open my $fh, '<:stdio', $samp_locatedb
+    or die "oops, cannot open $samp_locatedb with :crlf";
+  binmode($fh)
+    or die "oops, cannot set binary mode";
+  diag "stdio layers: ",PerlIO::get_layers($fh),"\n";
+  is (File::Locate::Iterator::FileMap::_bad_layer($fh), undef,
+      '_bad_layer on :stdio');
 }
 
 #-----------------------------------------------------------------------------
