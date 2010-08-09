@@ -18,8 +18,6 @@
 # with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
-## no critic (ProhibitCallsToUndeclaredSubs)
-
 use strict;
 use warnings;
 use Test::More;
@@ -27,7 +25,20 @@ use Test::More;
 eval 'use Test::Synopsis; 1'
   or plan skip_all => "due to Test::Synopsis not available -- $@";
 
-plan tests => 1;
-synopsis_ok('lib/File/Locate/Iterator.pm');
+my $manifest = ExtUtils::Manifest::maniread();
+my @files = grep m{^lib/.*\.pm$}, keys %$manifest;
 
+if (! eval { require Iterator }) {
+  diag "skip Iterator::Locate since Iterator.pm not available -- $@";
+  @files = grep {! m{/Iterator/Locate.pm} } @files;
+}
+
+if (! eval { require Iterator::Simple }) {
+  diag "skip Iterator::Simple::Locate since Iterator::Simple not available -- $@";
+  @files = grep {! m{/Iterator/Simple/Locate.pm} } @files;
+}
+
+plan tests => 1 * scalar @files;
+
+Test::Synopsis::synopsis_ok(@files);
 exit 0;

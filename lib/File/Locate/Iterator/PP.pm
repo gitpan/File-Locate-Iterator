@@ -24,6 +24,9 @@ use warnings;
 use Carp;
 use File::FnMatch;
 
+# uncomment this to run the ### lines
+#use Smart::Comments;
+
 sub _UNEXPECTED_EOF {
   my ($self) = @_;
   undef $self->{'entry'};
@@ -51,7 +54,7 @@ sub next {
     my $mref = $self->{'mref'};
     my $pos = $self->{'pos'};
   MREF_LOOP: for (;;) {
-      if (DEBUG >= 2) { printf "pos in map %#x\n", $pos; }
+      #### pos in map: sprintf('%#x', $pos)
       if ($pos >= length ($$mref)) {
         undef $self->{'entry'};
         return; # end of file
@@ -59,7 +62,7 @@ sub next {
 
       my ($adjshare) = unpack 'c', substr ($$mref, $pos++, 1);
       if ($adjshare == -128) {
-        if (DEBUG >= 2) { printf "  2byte pos %#X\n", $pos; }
+        #### 2byte pos: sprintf('%#X', $pos)
         # print ord(substr ($$mref,$pos,1)),"\n";
         # print ord(substr ($$mref,$pos+1,1)),"\n";
 
@@ -72,7 +75,7 @@ sub next {
 
         $pos += 2;
       }
-      if (DEBUG >= 2) { print "adjshare $adjshare\n"; }
+      ### $adjshare
       $sharelen += $adjshare;
       # print "share now $sharelen\n";
       if ($sharelen < 0 || $sharelen > length($entry)) {
@@ -104,7 +107,7 @@ sub next {
     local $/ = "\0"; # readline() to \0
 
     my $fh = $self->{'fh'};
-    if (DEBUG) { printf "pos tell(fh)=%#x\n",tell($fh); }
+    ### pos tell(fh): sprintf('%#x',tell($fh))
   IO_LOOP: for (;;) {
       my $adjshare;
       unless (my $got = read $fh, $adjshare, 1) {
@@ -126,10 +129,10 @@ sub next {
         ($adjshare) = unpack 'n', $adjshare;
         if ($adjshare >= 32768) { $adjshare -= 65536; }
       }
-      if (DEBUG) { print "adjshare $adjshare\n"; }
+      ### $adjshare
 
       $sharelen += $adjshare;
-      if (DEBUG) { print "share now $sharelen\n"; }
+      ### share now: $sharelen
       if ($sharelen < 0 || $sharelen > length($entry)) {
         push @_, $sharelen; goto &_BAD_SHARE;
       }
@@ -145,7 +148,7 @@ sub next {
         $part = readline $fh;
         if (! defined $part) { goto &_UNEXPECTED_EOF; }
 
-        if (DEBUG) { print "part '$part'\n"; }
+        ### part: $part
         chomp $part or goto &_UNEXPECTED_EOF;
       }
 

@@ -73,7 +73,7 @@ MyMakeMakerExtras::WriteMakefile
              => 'http://user42.tuxfamily.org/file-locate-iterator/index.html',
            },
         recommends
-        => { 'File::Map' => 0.20, # version 0.20 for empty files
+        => { 'File::Map' => 0.24, # version 0.24 for no prototypes
            },
         optional_features
         => { maximum_examples

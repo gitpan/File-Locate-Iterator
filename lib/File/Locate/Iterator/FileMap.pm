@@ -22,9 +22,10 @@ use strict;
 use warnings;
 use Scalar::Util;
 
-our $VERSION = 10;
+# uncomment this to run the ### lines
+#use Smart::Comments;
 
-use constant DEBUG => 0;
+our $VERSION = 11;
 
 our %cache;
 
@@ -43,16 +44,16 @@ sub get {
   my ($class, $fh) = @_;
 
   my $key = _key($fh);
-  if (DEBUG) { print "cache get $fh, key=$key, size ",-s $fh,"\n"; }
+  ### cache get: "$fh, $key, size=".(-s $fh)
   return ($cache{$key} || do {
     require File::Map;
-    File::Map->VERSION('0.20'); # for empty file as empty string
-    my $self = bless { key => $key }, $class;
+    File::Map->VERSION('0.24'); # for no prototypes
+    my $self = bless { key  => $key,
+                       mmap => undef,
+                     }, $class;
 
-    # explicit \$foo since no prototype when only "require File::Map", and
-    # "&" calls to defeat if File::Map is in fact already loaded :-(
-    &File::Map::map_handle (\$self->{'mmap'}, $fh, '<');
-    &File::Map::advise (\$self->{'mmap'}, 'sequential');
+    File::Map::map_handle ($self->{'mmap'}, $fh, '<');
+    File::Map::advise ($self->{'mmap'}, 'sequential');
 
     Scalar::Util::weaken ($cache{$key} = $self);
     $self;
@@ -77,7 +78,7 @@ use constant::defer _PAGESIZE => sub {
 # return the total bytes used by mmaps here plus prospective further $space
 sub _total_space {
   my ($space) = @_;
-  if (DEBUG) { print "total space of $space + ",values %cache,"\n"; }
+  ### total space of: $space, values(%cache)
   $space = _round_up_pagesize($space);
   foreach my $self (values %cache) {
     $space += _round_up_pagesize (length (${$self->mmap_ref}));
@@ -106,28 +107,6 @@ sub _have_mmap_layer {
   return $ret;
 }
 
-my %acceptable_layers = (unix   => 1,
-                         stdio  => 1,
-                         perlio => 1,
-                         mmap   => 1);
-
-# return the name of a layer bad for mmap, or undef if all ok
-sub _bad_layer {
-  my ($fh) = @_;
-  my $bad_layer;
-  eval {
-    require PerlIO; # new in perl 5.8
-    foreach my $layer (PerlIO::get_layers ($fh)) {
-      if (! $acceptable_layers{$layer}) {
-        if (DEBUG) { print STDERR "layer '$layer' no good for mmap\n"; }
-        $bad_layer = $layer;
-        last;
-      }
-    }
-  };
-  return $bad_layer;
-}
-
 # return true if mmapping $fh would be an excessive cumulative size
 sub _mmap_size_excessive {
   my ($fh) = @_;
@@ -144,11 +123,9 @@ sub _mmap_size_excessive {
         * 0.2; # then don't go past 1/5 of that usable space
 
   my $prosp = File::Locate::Iterator::FileMap::_total_space (-s $fh);
-  if (DEBUG) {
-    print "mmap size limit $limit\n";
-    print "  file size ",(-s $fh)," for new total $prosp\n";
-  }
-  if (DEBUG) { if ($prosp > $limit) { print "  too big\n"; } }
+  ### mmap size limit: $limit
+  ### file size: -s $fh
+  ### for new total: $prosp
   return ($prosp > $limit);
 }
 

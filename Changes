@@ -17,6 +17,9 @@ with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 11, February 2010
+    - no prototypes in File::Map 0.24
+
 Version 10, January 2010
     - layer :stdio also ok for mmap
 

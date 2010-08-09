@@ -24,17 +24,19 @@ use Test::More;
 
 ## no critic (ProtectPrivateSubs)
 
-eval { require File::Map; 1 }
-  or plan skip_all => 'File::Map not available';
-diag "File::Map version ",File::Map->VERSION;
+BEGIN {
+  eval { require File::Map; 1 }
+    or plan skip_all => "File::Map not available -- $@";
+  diag "File::Map version ",File::Map->VERSION;
 
-plan tests => 17;
+  plan tests => 14;
 
-SKIP: { eval 'use Test::NoWarnings; 1'
-          or skip 'Test::NoWarnings not available', 1; }
+ SKIP: { eval 'use Test::NoWarnings; 1'
+           or skip 'Test::NoWarnings not available', 1; }
+}
 
 require File::Locate::Iterator::FileMap;
-my $want_version = 10;
+my $want_version = 11;
 is ($File::Locate::Iterator::FileMap::VERSION, $want_version,
     'VERSION variable');
 is (File::Locate::Iterator::FileMap->VERSION, $want_version,
@@ -55,8 +57,13 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
 # _have_mmap_layer()
 
 {
-  open my $fh, '<', $samp_locatedb
-    or die "oops, cannot open $samp_locatedb";
+  # Crib note: setting $ENV{'PERLIO'} has no effect, the default layers have
+  # already been determined, but :raw overrides.
+  my $fh;
+  eval { open $fh, '<:raw', $samp_locatedb }   # if perlio
+    or eval { open $fh, '<', $samp_locatedb }  # if older perl
+      or die "oops, cannot open $samp_locatedb: $!";
+  diag "not-mmap layers: ",join(' ',PerlIO::get_layers($fh));
   ok (! File::Locate::Iterator::FileMap::_have_mmap_layer($fh),
       '_have_mmap_layer identify no :mmap layer');
 }
@@ -86,46 +93,9 @@ SKIP: {
   if ($nosuchlayer) {
     skip "No :mmap layer available", 1;
   }
-  diag "mmap layers: ",PerlIO::get_layers($fh),"\n";
+  diag "mmap layers: ",join(' ',PerlIO::get_layers($fh));
   ok (File::Locate::Iterator::FileMap::_have_mmap_layer($fh),
       '_have_mmap_layer identify :mmap layer');
-}
-
-#-----------------------------------------------------------------------------
-# _bad_layer()
-
-{
-  open my $fh, '<', $samp_locatedb
-    or die "oops, cannot open $samp_locatedb";
-  binmode($fh)
-    or die "oops, cannot set binary mode";
-  diag "binmode layers: ",PerlIO::get_layers($fh),"\n";
-  is (File::Locate::Iterator::FileMap::_bad_layer($fh), undef,
-      '_bad_layer on plain open + binmode');
-}
-
-SKIP: {
-  $have_PerlIO
-    or skip 'PerlIO module not available', 1;
-
-  open my $fh, '<:crlf', $samp_locatedb
-    or die "oops, cannot open $samp_locatedb with :crlf";
-  diag "crlf layers: ",PerlIO::get_layers($fh),"\n";
-  is (File::Locate::Iterator::FileMap::_bad_layer($fh), 'crlf',
-      '_bad_layer on :crlf');
-}
-
-SKIP: {
-  $have_PerlIO
-    or skip 'PerlIO module not available', 1;
-
-  open my $fh, '<:stdio', $samp_locatedb
-    or die "oops, cannot open $samp_locatedb with :crlf";
-  binmode($fh)
-    or die "oops, cannot set binary mode";
-  diag "stdio layers: ",PerlIO::get_layers($fh),"\n";
-  is (File::Locate::Iterator::FileMap::_bad_layer($fh), undef,
-      '_bad_layer on :stdio');
 }
 
 #-----------------------------------------------------------------------------
@@ -154,6 +124,8 @@ is (File::Locate::Iterator::FileMap::_total_space(1),
 {
   open my $fh, '<', $samp_locatedb
     or die "oops, cannot open $samp_locatedb";
+  binmode($fh)  # against msdos :crlf
+    or die 'oops, cannot set binmode';
 
   is (File::Locate::Iterator::FileMap->find($fh), undef,
       'find() not mapped yet');

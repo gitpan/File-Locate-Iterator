@@ -26,7 +26,7 @@ use Test::More tests => 92;
 SKIP: { eval 'use Test::NoWarnings; 1'
           or skip 'Test::NoWarnings not available', 1; }
 
-my $want_version = 10;
+my $want_version = 11;
 is ($File::Locate::Iterator::VERSION, $want_version, 'VERSION variable');
 is (File::Locate::Iterator->VERSION,  $want_version, 'VERSION class method');
 { ok (eval { File::Locate::Iterator->VERSION($want_version); 1 },

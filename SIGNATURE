@@ -1,5 +1,5 @@
 This file contains message digests of all files listed in MANIFEST,
-signed via the Module::Signature module, version 0.61.
+signed via the Module::Signature module, version 0.63.
 
 To verify the content in this distribution, first make sure you have
 Module::Signature installed, then type:
@@ -15,22 +15,25 @@ not run its Makefile.PL or Build.PL.
 Hash: SHA1
 
 SHA1 842745cb706f8f2126506f544492f7a80dbe29b3 COPYING
-SHA1 cf37620097480ac9fd38dd9c3ff2cc39b3a5799f Changes
+SHA1 b09edb17d7c34caebe0c4a6efc29079250251dc4 Changes
 SHA1 c45c7699cc369e47773e235f40e8c749b151e511 Iterator.xs
-SHA1 6fad602f61516d65d8f69b04c830f80509f4734c MANIFEST
-SHA1 a5702ed4c66c943b47354756b340812302d15e6f MANIFEST.SKIP
-SHA1 cd0ae58bcdd0c3fb47e321adc03a9ea86739f092 META.yml
-SHA1 5a91e1ee2ac6ddb15bd608629fd64b9c7b9d1dde Makefile.PL
+SHA1 c8304940f985fda38feaf42d4621c763d08bc0d3 MANIFEST
+SHA1 2ddbc840121949613ab7f1339389465737808fb6 MANIFEST.SKIP
+SHA1 867c638b515f13644901f677ab92904815cace1c META.yml
+SHA1 58af924f6694a959c176778c4dcfdca7808087af Makefile.PL
 SHA1 51b2bf1c2e892da60023ae54ad549aacb11abce6 README
-SHA1 54b9eefe6c6639ec78500644f18683ec31be8122 debian/changelog
+SHA1 18bbc43fe57d9fb2d4a575469e4bcf596a0a7841 debian/changelog
 SHA1 ac3478d69a3c81fa62e60f5c3696165a4e5e6ac4 debian/compat
-SHA1 28b9a8713474d3f68786298489f6f95d9dbb3d98 debian/control
+SHA1 68dad351f9f1b4dc806972afff50616d5892b7b3 debian/control
 SHA1 9fdf371e8168995d73649984d161c5a2411bc8a1 debian/copyright
 SHA1 e1b9cd434223e41b4c248ea145f414c4ef32e12b debian/rules
+SHA1 61652cd1568dcf2614df833eba241755eee34e89 debian/source/format
 SHA1 026052dbdff9ae24b456418590bbfb4c3797243b debian/watch
+SHA1 0927d2ab9525cabbe4393e801ee95c99c00bfc75 devel/File/FnMatch/Regexp.pm
 SHA1 de55e8d2fab495b52bf6c56d540b48e7f3c54057 devel/GlobRegexp.pm
 SHA1 32e1a16cfc3bd62fc6ca11581eebb60f4a9f7e63 devel/Makefile
 SHA1 7fe5164afdd110b5091797a2888fa0aa9f9633f2 devel/Shared.pm
+SHA1 33c6a26a3a686aff5da326879821fff3be685a2c devel/bad-layer.pl
 SHA1 8c669467e8f8d644240c4fccb3a97ed151eaf01d devel/bin-no-cc/cc
 SHA1 f67dae39d5194818c46a49a8d18e65b2a78cc65e devel/crlf.pl
 SHA1 f2a90c8cc62c64f115e831d61815b8a540283a70 devel/croak-local.pl
@@ -38,7 +41,11 @@ SHA1 f34a56acc66678a0960225a6f721041c70c55625 devel/glob.pl
 SHA1 0a4a739349fddaecefde5141d1afa44b3d40a46f devel/iterator-simple.pl
 SHA1 226f3534ff13d25d8e55b349a1ac7c7cfc0d804b devel/iterator.pl
 SHA1 feaa4f0427517ce6f9e6cd2af85fe579e6762a7c devel/lib/Sys/Mmap/Object.pm
+SHA1 1b206c5d52f57fb313e093bf511c274ba07b8870 devel/mmap-layers.pl
 SHA1 f8fc47364def14021d1406745c96b6406f428b99 devel/mmap-multi.pl
+SHA1 b6ee18ec3ba934be6e620d2bffd16ef178d5bd20 devel/mmap-newval.pl
+SHA1 fde1d115c5d2c2f85730d7d536e89244d0d1ec25 devel/mmap-overflow.pl
+SHA1 2f109e00c48067e15a373964d49d073e1c9ade2a devel/mmap-rv.pl
 SHA1 f0a4cb825f8cdc8d79bdeb6bfa46a624ee235065 devel/mmap-speed.pl
 SHA1 1ce16a7c05839cb7b584adb2f747cd1aa4691057 devel/mmap-zero.pl
 SHA1 2769a7aa8facc0e287e6fbe136790a2744a05b8d devel/mmap.pl
@@ -50,33 +57,34 @@ SHA1 8db9d40ebbd57969972d048a4f96405bdb4f3768 devel/stat.pl
 SHA1 f53e36b46ef7529d651ecab097fc740e2dbf6b77 devel/wait-status.pl
 SHA1 8ce7ca6667e0b0c5206978690a0e286892c43067 examples/iterator-simple.pl
 SHA1 0eb47a400768facd9411043ca458faf3ebb65d92 examples/iterator.pl
+SHA1 7a4d9831d914f99059b58218b46659863b34fffd examples/locate.pl
 SHA1 9e4c74870232a69eddd239bb017a6e0efc44c881 examples/native.pl
-SHA1 04b47938da4980ca0da3d5560d7826ef3139e861 inc/MyMakeMakerExtras.pm
-SHA1 005d753dd1cb67538ded07931423b2e7cd1e25b3 inc/my_pod2html
-SHA1 07dbd106d17b6aeb2cc2cbeff47de65c0dfb4034 lib/File/Locate/Iterator.pm
-SHA1 920196f7650879c6635e85df74aa3fd2f4cb1a26 lib/File/Locate/Iterator/FileMap.pm
-SHA1 e37d7556a631de6e891dd405e0cc8304d7ca33df lib/File/Locate/Iterator/PP.pm
-SHA1 9b186e95a421d56c4ffd8705259430acde4dba31 lib/Iterator/Locate.pm
-SHA1 b118bdf4553a6604753fc315b9b481dad6848cdd lib/Iterator/Simple/Locate.pm
+SHA1 cc2699f076682a35fc6443e4c379dcc81452609d inc/MyMakeMakerExtras.pm
+SHA1 63427b66eb26f013f10c835b0cf320c93361f310 inc/my_pod2html
+SHA1 aadb533779643a1cfbcf4fbf5b9c8680486e9c84 lib/File/Locate/Iterator.pm
+SHA1 7496d95565985065c063e810fc37aa91e43625ca lib/File/Locate/Iterator/FileMap.pm
+SHA1 c3df63174f0a4ce9657c9c4bc0102d094f967a5b lib/File/Locate/Iterator/PP.pm
+SHA1 2d33d7ad397f7170114739ddff39d3a9e6ad3bde lib/Iterator/Locate.pm
+SHA1 8ebc1f711814f769f6060709d5213ca6dc60aeee lib/Iterator/Simple/Locate.pm
 SHA1 847ddd74867e960646b4c166ab42047db4f9a1c4 ppport.h
-SHA1 378b932305fb60823467c2af3c771fe3fc295a13 t/0-META-read.t
+SHA1 11eda0347af48309996833a4da214197e31b85fb t/0-META-read.t
 SHA1 a343ed4dce96d05de51eed1ec065911584b96fce t/0-Test-DistManifest.t
 SHA1 bba0dc087cbe64d8f100ab77e6cef061c0bebf27 t/0-Test-Pod.t
-SHA1 39fb4f79da7687abc825c4ea646acb3ee9e3a342 t/0-Test-YAML-Meta.t
-SHA1 b86f10e1b225d9d254f3e9bd3e2d71bc2da47929 t/1-Test-Synopsis.t
-SHA1 9993dd2e8648d83975e9ec33f222ffbecf44c182 t/File-Locate-Iterator.t
-SHA1 8ce1317974027c6f96a69545b4772b52c66a2bda t/FileMap.t
-SHA1 ff5156162a8e5275fca11b2d7c13c66a90e41f60 t/Iterator-Simple.t
-SHA1 c6e939195d1121f85caf615331d0c4178fc60320 t/Iterator.t
-SHA1 f1effdaf8e1b594668490ce2d0e3375ac45443cc t/inc/MyTestHelpers.pm
+SHA1 9a19fa262c1cc6ee6afe638600ce880500a91946 t/0-Test-YAML-Meta.t
+SHA1 22075d38bc09772c68dfd6adcd3400a7fe5980be t/1-Test-Synopsis.t
+SHA1 690e1aeea6760da0aa65a094b6e1c9b185f2a92d t/File-Locate-Iterator.t
+SHA1 5f7ee332059d6e6905a5489b3e2cef67b59aec62 t/FileMap.t
+SHA1 bbd1de960e0fc2a7a7ef1a5cc30d351176e7be4d t/Iterator-Simple.t
+SHA1 3ca4ec601ed1260af753359a98c8df1897e9ace3 t/Iterator.t
+SHA1 e5b9059d5e27d380fc9418095d773ad5f96baa06 t/inc/MyTestHelpers.pm
 SHA1 e0cdb43cd8da13ad9edbd000c145344c22ddfb36 t/locate-program.t
-SHA1 dd0bc6ec9745d4b78a5e01883f5d6d01d63cfda1 t/samp.locatedb
-SHA1 8858b6196e8a1fe2c67f41c9748aa1bb3e7ac50d t/samp.zeros
+SHA1 be919e8c842d0a1b379199f7034753dc89d60a4c t/samp.locatedb
+SHA1 06a130c2dd05f1cce306ffd4658291b85881dd4e t/samp.zeros
 SHA1 3f4ebcd5e46acc0541dc0521af08f7cc02abfa03 t/test-weaken.t
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iD8DBQFLXMNxLFMCIV9q3ToRAszQAJ9YIQpfnGS+N2yNuxtjT+cZ/bS9ZwCfem+1
-atu0kWrIs/4roCV8IF2ypDo=
-=bMoT
+iD8DBQFLyh4ILFMCIV9q3ToRAlBtAJ4iPTZfRftMHhbQ603q9XKYd2pgmwCgoOK9
+C33O59al98OkOvnDoDEsYdw=
+=+Fdb
 -----END PGP SIGNATURE-----

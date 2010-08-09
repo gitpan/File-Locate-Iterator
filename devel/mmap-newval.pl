@@ -1,6 +1,6 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
-# Copyright 2009 Kevin Ryde
+# Copyright 2010 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -17,22 +17,18 @@
 # You should have received a copy of the GNU General Public License along
 # with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
+# use strict;
+# use warnings;
+# use blib "$ENV{HOME}/p/other/File-Map-0.23/blib";
+# use File::Map;
+# print File::Map->VERSION,"\n";
 
-# Native use of File::Locate::Iterator.
+use File::Map 'map_file';
 
-use strict;
-use warnings;
-use File::Locate::Iterator;
+my @array;
+map_file ($array[1], '/etc/motd', '<');
+print $array[1];
 
-my $it = File::Locate::Iterator->new;
-my $count = 0;
-
-while (defined (my $entry = $it->next)) {
-  print $entry,"\n";
-
-  if ($count++ > 10) {
-    print "...\n";
-    last;
-  }
-}
-exit 0;
+# my %hash;
+# map_file ($hash{'foo'}, '/etc/motd', '<');
+# print $hash{'foo'};

@@ -23,33 +23,37 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = 10;
+use DynaLoader;
 our @ISA = ('DynaLoader');
+
+# uncomment this to run the ### lines
+#use Smart::Comments;
+
+our $VERSION = 11;
 
 use constant default_use_mmap => 'if_sensible';
 my $header = "\0LOCATE02\0";
-use constant DEBUG => 0;
 
-require DynaLoader;
-if (eval { bootstrap File::Locate::Iterator $VERSION }) {
-  if (DEBUG) { print "FLI next() from XS\n"; }
+if (eval { File::Locate::Iterator->bootstrap($VERSION) }) {
+  ### FLI next() from XS
 } else {
-  if (DEBUG) { print "FLI next() in perl -- XS didn't load -- $@\n"; }
+  ### FLI next() in perl, XS didn't load: $@
   require File::Locate::Iterator::PP;
 }
 
 
 # default path these days is /var/cache/locate/locatedb
 #
-# back in findutils 4.1 it was $(localstatedir)/locatedb, but alas with no
-# apparent way to ask about the location
+# back in findutils 4.1 it was $(localstatedir)/locatedb, but there seems to
+# have been no way to ask about the location
 #
 sub default_database_file {
-  my $filename = $ENV{'LOCATE_PATH'};
-  if (! defined $filename) {
-    $filename = '/var/cache/locate/locatedb';
+  # my ($class) = @_;
+  if (defined (my $env = $ENV{'LOCATE_PATH'})) {
+    return $env;
+  } else {
+    return '/var/cache/locate/locatedb';
   }
-  return $filename;
 }
 
 sub new {
@@ -83,11 +87,8 @@ sub new {
     $self->{'globs'} = \@globs;
   }
 
-  if (DEBUG) { print "regexp ",
-                 (defined $self->{'regexp'} ? $self->{'regexp'} : 'undef'),
-                   " globs ",
-                     (defined $self->{'globs'} ? @{$self->{globs}} : 'undef'),
-                       "\n"; }
+  ### regexp: $self->{'regexp'}
+  ### globs : defined $self->{'globs'}
 
   if (defined (my $str = $options{'database_str'})) {
     $self->{'mref'} = \$str;
@@ -95,42 +96,30 @@ sub new {
   } else {
     my $use_mmap = (defined $options{'use_mmap'}
                     ? $options{'use_mmap'}
-                    : default_use_mmap);
-    if (DEBUG) { print "use_mmap=$use_mmap\n"; }
+                    : $class->default_use_mmap);
+    ### $use_mmap
     if ($use_mmap) {
       if (! eval { require File::Locate::Iterator::FileMap }) {
-        if (DEBUG) { print "FileMap not possible: $@\n"; }
+        ### FileMap not possible: $@
         $use_mmap = 0;
       }
     }
 
     my $fh = $options{'database_fh'};
     if (defined $fh) {
-      if ($use_mmap) {
-        if (fileno($fh) < 0) {
-          if (DEBUG) { print "no fileno for fh\n"; }
-          $use_mmap = 0;
-        } elsif (defined (my $layer
-                     = File::Locate::Iterator::FileMap::_bad_layer($fh))) {
-          if (DEBUG) { print "bad layer $layer\n"; }
-          if ($use_mmap eq '1') {
-            croak "database_fh layer '$layer' no good for mmap";
-          }
-          $use_mmap = 0;
-        } elsif ($use_mmap eq 'if_sensible'
-                 && File::Locate::Iterator::FileMap::_have_mmap_layer($fh)) {
-          # if already a :mmap perlio layer don't mmap again
-          if (DEBUG) { print "already have :mmap layer\n"; }
-          $use_mmap = 0;
-        }
+      if ($use_mmap eq 'if_sensible'
+          && File::Locate::Iterator::FileMap::_have_mmap_layer($fh)) {
+        ### already have mmap layer, not sensible to mmap again
+        $use_mmap = 0;
       }
     } else {
       my $file = (defined $options{'database_file'}
                   ? $options{'database_file'}
                   : $class->default_database_file);
-      if (DEBUG) { print "open database_file $file\n"; }
+      ### open database_file: $file
+
       # Crib note: '<:raw' means without :perlio buffering, whereas
-      # binmode() preserves that, assuming it's in the $ENV{'PERLIO'}
+      # binmode() preserves that buffering, assuming it's in the $ENV{'PERLIO'}
       # defaults.  Also :raw is not available in perl 5.6.
       open $fh, '<', $file
         or croak "Cannot open $file: $!";
@@ -142,10 +131,11 @@ sub new {
       $use_mmap = (File::Locate::Iterator::FileMap::_mmap_size_excessive($fh)
                    ? 0
                    : 'if_possible');
+      ### if_sensible after size check becomes: $use_mmap
     }
 
     if ($use_mmap) {
-      if (DEBUG) { print "attempt mmap $fh size ",(-s $fh),"\n"; }
+      ### attempt mmap: $fh, (-s $fh)
 
       # There's many ways an mmap can fail, just chuck an eval on FileMap /
       # File::Map it to catch them all.
@@ -159,10 +149,12 @@ sub new {
       #   ordinary files, though forced use_mmap=>1 just goes ahead anyway.
       #
       if ($use_mmap eq 'if_possible') {
-        if (-f $fh) {
+        if (! -f $fh) {
+          ### if_possible, not a plain file, consider not mmappable
+        } else {
           if (! eval { $self->{'fm'}
                          = File::Locate::Iterator::FileMap->get($fh) }) {
-            if (DEBUG) { print "mmap failed: $@\n"; }
+            ### mmap failed: $@
           }
         }
       } else {
@@ -312,23 +304,31 @@ except a fixed string (none of "*", "?" or "[") can match anywhere.
 Whether to use C<mmap> to access the database.  This is fast and efficient
 when it's possible.  To use mmap you must have the C<File::Map> module, the
 file must fit in available address space, and for a C<database_fh> handle
-there mustn't be any transforming C<PerlIO> layers.
+there mustn't be any transforming C<PerlIO> layers.  The choices are
+
+    undef           \
+    "default"       | use mmap if sensible
+    "if_sensible"   /
+    "if_possible"   use mmap if possible, otherwise file I/O
+    0               don't use mmap
+    1               must use mmap, croak if cannot
+    
 
 Setting C<default>, C<undef> or omitted means C<if_sensible>.
-C<if_sensible> uses mmap if available, if the size is reasonable, and for
-C<database_fh> if it doesn't already have an C<:mmap> layer.  C<if_possible>
-lifts those restrictions and uses mmap whenever it can be done.  Setting
-C<1> means use mmap or croak, and setting C<0> means don't use mmap at all.
+C<if_sensible> uses mmap if available and the file size is reasonable, and
+for C<database_fh> if it doesn't already have an C<:mmap> layer.
+C<if_possible> lifts those restrictions and uses mmap whenever it can be
+done.
 
     $it = File::Locate::Iterator->new
             (use_mmap => 'if_possible');
 
-When multiple iterators access the same file they share the mmap.  Only
-ordinary files are mapped by C<if_possible> and C<if_sensible> because
-generally the file size on char specials is not reliable.  The size check in
-C<if_sensible> counts space in all C<File::Locate::Iterator> mappings and
-won't go beyond 1/5 of available data space (which is assumed to be
-(2^wordsize)/4 bytes).  On a 32-bit system this means 200Mb.
+When multiple iterators access the same file they share the mmap.  The size
+check for C<if_sensible> counts space in all C<File::Locate::Iterator>
+mappings and won't go beyond 1/5 of available data space, which is assumed
+to be (2**wordsize)/4 bytes.  On a 32-bit system this means 200Mb.
+C<if_possible> and C<if_sensible> only map ordinary files because generally
+the file size on char specials is not reliable.
 
 =back
 
@@ -340,9 +340,9 @@ won't go beyond 1/5 of available data space (which is assumed to be
 
 =item C<< $entry = $it->next >>
 
-Return the next entry from the database, or no values at end of file.
-Recall that an empty return means C<undef> in scalar context or no values in
-array context so you can loop with either
+Return the next entry from the database, or no values at end of file.  An
+empty return means C<undef> in scalar context or no values in array context
+so you can loop with either
 
     while (defined (my $filename = $it->next)) ...
 
@@ -365,8 +365,8 @@ installed.
 
 =head1 OTHER NOTES
 
-On some systems mmap may be a bit too "efficient", giving a process more of
-the CPU than other processes making periodic system calls.  This is an OS
+On some systems C<mmap> may be a bit too "efficient", giving a process more
+of the CPU than processes which make periodic system calls.  This is an OS
 scheduling matter, but you might have to turn down the C<nice> or C<ionice>
 if doing a lot of mmapped work.
 
@@ -396,20 +396,20 @@ C<File::Locate> reads a locate database with callbacks.  Whether you prefer
 callbacks or an iterator is a matter of style.  Iterators let you write your
 own loop and have multiple searches in progress simultaneously.
 
-Iterators are good for cooperative coroutining like C<POE> or C<Gtk> where
-you must hold state in some sort of variable to be progressed by callbacks
-from the main loop.  (C<next()> waits while reading from the database, so
-the database generally should be a plain file rather than a socket or
-something, so as not to hold up a main loop.)
-
 When C<File::Locate::Iterator> is built with its XSUB code (requires Perl
 5.10.0 or higher currently) the speed of an iterator is about the same as
 callbacks.
 
+Iterators are good for cooperative coroutining like C<POE> or C<Gtk> where
+state must be held in some sort of variable to be progressed by callbacks
+from the main loop.  (C<next()> waits while reading from the database, so
+the database generally should be a plain file rather than a socket or
+something, so as not to hold up a main loop.)
+
 If you have the recommended mmap (C<File::Map> module) then iterators share
-a map of the database file.  If not then currently each holds a separate
-open handle to the database, which means a file descriptor and PerlIO
-buffering per iterator.  Sharing a handle and making each seek to its
+an C<mmap> of the database file.  If not then currently each holds a
+separate open handle to the database, which means a file descriptor and
+PerlIO buffering per iterator.  Sharing a handle and making each seek to its
 desired position would be possible, but a seek drops buffered data and so
 would go slower.  Some PerlIO trickery might transparently share an fd and
 have some multi-buffering.

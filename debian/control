@@ -28,15 +28,15 @@
 Source: libfile-locate-iterator-perl
 Section: perl
 Priority: optional
-Build-Depends: cdbs, debhelper (>= 5), perl (>= 5.10), libtest-more-perl | perl-modules (>= 5.6.2)
+Build-Depends: cdbs, debhelper (>= 5), perl (>= 5.10), libtest-more-perl | perl (>= 5.6.2)
 Maintainer: Kevin Ryde <user42@zip.com.au>
-Standards-Version: 3.8.3
+Standards-Version: 3.8.4
 Homepage: http://user42.tuxfamily.org/file-locate-iterator/index.html
 Bugs: mailto:user42@zip.com.au
 
 Package: libfile-locate-iterator-perl
 Architecture: any
-Depends: perl (>= 5.6), libconstant-defer-perl, ${perl:Depends}, ${shlibs:Depends}, ${misc:Depends}
+Depends: perl (>= 5.6), libconstant-defer-perl, ${perl:Depends}, ${misc:Depends}, ${shlibs:Depends}
 Recommends: libfile-map-perl (>= 0.20)
 Suggests: libiterator-perl, libiterator-simple-perl
 Description: Read a "locate" database file with an iterator
