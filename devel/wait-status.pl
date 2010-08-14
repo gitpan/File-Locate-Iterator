@@ -1,6 +1,6 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
-# Copyright 2009 Kevin Ryde.
+# Copyright 2009, 2010 Kevin Ryde.
 #
 # This file is part of File-Locate-Iterator.
 #
@@ -21,7 +21,7 @@
 use strict;
 use warnings;
 use POSIX;
-my $status = 5632;
+my $status = 256;
 
 printf "status %#X\n", $status;
 if (WIFEXITED($status)) {

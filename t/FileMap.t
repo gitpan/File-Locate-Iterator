@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 # Copyright 2009, 2010 Kevin Ryde
 
@@ -22,21 +22,24 @@ use strict;
 use warnings;
 use Test::More;
 
+use lib 't';
+use MyTestHelpers;
+BEGIN { MyTestHelpers::nowarnings() }
+
 ## no critic (ProtectPrivateSubs)
 
 BEGIN {
-  eval { require File::Map; 1 }
-    or plan skip_all => "File::Map not available -- $@";
+  eval { require File::Map;
+         File::Map->VERSION('0.24'); # as per FileMap.pm
+         1 }
+    or plan skip_all => "File::Map 0.24 not available -- $@";
   diag "File::Map version ",File::Map->VERSION;
 
-  plan tests => 14;
-
- SKIP: { eval 'use Test::NoWarnings; 1'
-           or skip 'Test::NoWarnings not available', 1; }
+  plan tests => 13;
 }
 
 require File::Locate::Iterator::FileMap;
-my $want_version = 11;
+my $want_version = 12;
 is ($File::Locate::Iterator::FileMap::VERSION, $want_version,
     'VERSION variable');
 is (File::Locate::Iterator::FileMap->VERSION, $want_version,

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 # Copyright 2009, 2010 Kevin Ryde
 
@@ -21,27 +21,28 @@ use 5.006;
 use strict;
 use warnings;
 use File::Locate::Iterator;
-use Test::More tests => 92;
+use Test::More tests => 91;
 
-SKIP: { eval 'use Test::NoWarnings; 1'
-          or skip 'Test::NoWarnings not available', 1; }
+use lib 't';
+use MyTestHelpers;
+BEGIN { MyTestHelpers::nowarnings() }
 
-my $want_version = 11;
-is ($File::Locate::Iterator::VERSION, $want_version, 'VERSION variable');
-is (File::Locate::Iterator->VERSION,  $want_version, 'VERSION class method');
-{ ok (eval { File::Locate::Iterator->VERSION($want_version); 1 },
+{
+  my $want_version = 12;
+  is ($File::Locate::Iterator::VERSION, $want_version, 'VERSION variable');
+  is (File::Locate::Iterator->VERSION,  $want_version, 'VERSION class method');
+
+  ok (eval { File::Locate::Iterator->VERSION($want_version); 1 },
       "VERSION class check $want_version");
   my $check_version = $want_version + 1000;
   ok (! eval { File::Locate::Iterator->VERSION($check_version); 1 },
       "VERSION class check $check_version");
-}
-{
+
   my $empty_locatedb = "\0LOCATE02\0";
   my $it = File::Locate::Iterator->new (database_str => $empty_locatedb);
   is ($it->VERSION, $want_version, 'VERSION object method');
   ok (eval { $it->VERSION($want_version); 1 },
       "VERSION object check $want_version");
-  my $check_version = $want_version + 1000;
   ok (! eval { $it->VERSION($check_version); 1 },
       "VERSION object check $check_version");
 }
@@ -198,26 +199,28 @@ if ($] >= 5.008) {
           my $desc = "$database_desc, use_mmap=$use_mmap";
           diag $desc;
 
-          my $it = File::Locate::Iterator->new (@database_option,
-                                                use_mmap => $use_mmap);
-          my $noinfloop = no_inf_loop("$desc");
-          my @want = @samp_zeros;
-          my @got;
-          while (my ($filename) = $it->next) {
-            push @got, $filename;
-            $noinfloop->();
-          }
+          {
+            my $it = File::Locate::Iterator->new (@database_option,
+                                                  use_mmap => $use_mmap);
+            my $noinfloop = no_inf_loop("$desc");
+            my @want = @samp_zeros;
+            my @got;
+            while (my ($filename) = $it->next) {
+              push @got, $filename;
+              $noinfloop->();
+            }
 
-          if (0) {
-            require Data::Dumper;
-            diag (Data::Dumper->new([\@samp_zeros],['samp_zeros'])
-                  ->Useqq(1)->Dump);
-            diag (Data::Dumper->new([\@got],['got'])
-                  ->Useqq(1)->Dump);
+            if (0) {
+              require Data::Dumper;
+              diag (Data::Dumper->new([\@samp_zeros],['samp_zeros'])
+                    ->Useqq(1)->Dump);
+              diag (Data::Dumper->new([\@got],['got'])
+                    ->Useqq(1)->Dump);
+            }
+            is_deeply (\@got, \@want,
+                       "samp.locatedb  $desc, using_mmap="
+                       . ($it->_using_mmap ? "yes" : "no"));
           }
-          is_deeply (\@got, \@want,
-                     "samp.locatedb  $desc, using_mmap="
-                     . ($it->_using_mmap ? "yes" : "no"));
         }
       }
 

@@ -74,6 +74,7 @@ MyMakeMakerExtras::WriteMakefile
            },
         recommends
         => { 'File::Map' => 0.24, # version 0.24 for no prototypes
+             'Scalar::Util' => 0, # for FileMap bits
            },
         optional_features
         => { maximum_examples
@@ -84,15 +85,17 @@ MyMakeMakerExtras::WriteMakefile
                 },
              maximum_interoperation
              => { description => 'Have maximum inter-operation with other modules (optional supported other stuff).',
-                  requires => { 'Iterator' => 0,
+                  requires => { 'File::Map' => '0.24', # version 0.24 for no prototypes
+                                'Scalar::Util' => 0, # for FileMap bits
+                                'Iterator' => 0,
                                 'Iterator::Simple' => 0,
                               },
                 },
              maximum_tests
              => { description => 'Have "make test" do as much as possible.',
-                  requires => { 'Test::NoWarnings' => 0,
-                                'Test::Synopsis' => 0,
-                                'Test::Weaken' => 0,
+                  requires => { 'Test::Synopsis' => 0,
+                                # version 3.002 for "tracked_types"
+                                'Test::Weaken' => '3.002',
                               },
                 },
              maximum_devel
@@ -103,7 +106,7 @@ MyMakeMakerExtras::WriteMakefile
                                 'Perl6::Slurp' => 0,
                                 'Scalar::Util' => 0,
                                 'Text::Glob' => 0,
-                                'File::Map' => 0,
+                                'File::Map' => '0.24',
                                 'PerlIO' => 0,
                                 'Sys::Mmap' => 0,
                               },

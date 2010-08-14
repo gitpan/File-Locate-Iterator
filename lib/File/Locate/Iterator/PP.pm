@@ -50,8 +50,7 @@ sub next {
   my $regexp = $self->{'regexp'};
   my $globs = $self->{'globs'};
 
-  if (exists $self->{'mref'}) {
-    my $mref = $self->{'mref'};
+  if (my $mref = $self->{'mref'}) {
     my $pos = $self->{'pos'};
   MREF_LOOP: for (;;) {
       #### pos in map: sprintf('%#x', $pos)

@@ -1,6 +1,6 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
-# Copyright 2009 Kevin Ryde
+# Copyright 2010 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -23,43 +23,40 @@ use warnings;
 use File::Locate::Iterator;
 use Test::More;
 
-use FindBin;
-use File::Spec;
-use lib File::Spec->catdir($FindBin::Bin,'inc');
+use lib 't';
 use MyTestHelpers;
+use Test::Weaken::ExtraBits;
+BEGIN { MyTestHelpers::nowarnings() }
 
-# version 3.002 for "tracked_types"
-my $have_test_weaken = eval "use Test::Weaken 3.002; 1";
-if (! $have_test_weaken) {
-  plan skip_all => "due to Test::Weaken 3.002 not available -- $@";
+BEGIN {
+  eval { require Iterator::Simple }
+    or plan skip_all => "Iterator::Simple not available -- $@";
+
+  # version 3.002 for "tracked_types"
+  eval "use Test::Weaken 3.002; 1"
+    or plan skip_all => "due to Test::Weaken 3.002 not available -- $@";
+
+  plan tests => 3;
 }
-plan tests => 2;
-
 diag ("Test::Weaken version ", Test::Weaken->VERSION);
+diag ("Iterator::Simple version ", Iterator::Simple->VERSION);
 
 
 #-----------------------------------------------------------------------------
 
+use FindBin;
+use File::Spec;
 my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
 
-# return all the slots out of a globref
-# only an IO should be set in an open handle
-sub contents_glob {
-  my ($ref) = @_;
-  if (ref $ref eq 'GLOB') {
-    return map {*$ref{$_}} qw(SCALAR ARRAY HASH CODE IO GLOB FORMAT);
-  } else {
-    return;
-  }
-}
+require Iterator::Simple::Locate;
 
 # database_file
 {
   my $leaks = Test::Weaken::leaks
     ({ constructor => sub {
-         File::Locate::Iterator->new (database_file => $samp_locatedb);
+         return Iterator::Simple::Locate->new (database_file => $samp_locatedb)
        },
-       contents => \&contents_glob,
+       contents => \&Test::Weaken::ExtraBits::contents_glob_IO,
        tracked_types => [ 'GLOB', 'IO' ],
      });
   is ($leaks, undef, 'deep garbage collection');
@@ -75,10 +72,30 @@ sub contents_glob {
          my $filename = $samp_locatedb;
          open my $fh, '<', $filename
            or die "oops, cannot open $filename";
-         return [ File::Locate::Iterator->new (database_fh => $fh),
+         return [ Iterator::Simple::Locate->new (database_fh => $fh),
                   $fh ];
        },
-       contents => \&contents_glob,
+       contents => \&Test::Weaken::ExtraBits::contents_glob_IO,
+       tracked_types => [ 'GLOB', 'IO' ],
+     });
+  is ($leaks, undef, 'deep garbage collection');
+  if ($leaks && defined &explain) {
+    diag "Test-Weaken ", explain $leaks;
+  }
+}
+
+# database_fh, no mmap
+{
+  my $leaks = Test::Weaken::leaks
+    ({ constructor => sub {
+         my $filename = $samp_locatedb;
+         open my $fh, '<', $filename
+           or die "oops, cannot open $filename";
+         return [ Iterator::Simple::Locate->new (database_fh => $fh,
+                                                 use_mmap => 0),
+                  $fh ];
+       },
+       contents => \&Test::Weaken::ExtraBits::contents_glob_IO,
        tracked_types => [ 'GLOB', 'IO' ],
      });
   is ($leaks, undef, 'deep garbage collection');

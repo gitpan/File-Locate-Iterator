@@ -9,6 +9,7 @@ debian/source/format
 debian/watch
 devel/bad-layer.pl
 devel/bin-no-cc/cc
+devel/copy.pl
 devel/crlf.pl
 devel/croak-local.pl
 devel/File/FnMatch/Regexp.pm
@@ -19,6 +20,7 @@ devel/iterator.pl
 devel/lib/Sys/Mmap/Object.pm
 devel/Makefile
 devel/mmap-layers.pl
+devel/mmap-multi.c
 devel/mmap-multi.pl
 devel/mmap-newval.pl
 devel/mmap-overflow.pl
@@ -56,13 +58,16 @@ t/0-Test-DistManifest.t
 t/0-Test-Pod.t
 t/0-Test-YAML-Meta.t
 t/1-Test-Synopsis.t
+t/File-Locate-Iterator-weaken.t
 t/File-Locate-Iterator.t
 t/FileMap.t
-t/inc/MyTestHelpers.pm
+t/Iterator-Simple-weaken.t
 t/Iterator-Simple.t
+t/Iterator-weaken.t
 t/Iterator.t
 t/locate-program.t
+t/MyTestHelpers.pm
 t/samp.locatedb
 t/samp.zeros
-t/test-weaken.t
+t/Test/Weaken/ExtraBits.pm
 META.yml                                 Module meta-data (added by MakeMaker)

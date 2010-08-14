@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 # Copyright 2009, 2010 Kevin Ryde
 
@@ -23,22 +23,26 @@ use warnings;
 use File::Locate::Iterator;
 use Test::More;
 
-$] >= 5.008
-  or plan skip_all => 'need perl 5.008 for multi-arg pipe open';
+use lib 't';
+use MyTestHelpers;
+BEGIN { MyTestHelpers::nowarnings() }
 
-my $locate_help = `locate --help`;
-$locate_help =~ /--null/
-  or plan skip_all => 'locate program not available or no --null option';
+my $filename;
+BEGIN {
+  $] >= 5.008
+    or plan skip_all => 'need perl 5.008 for multi-arg pipe open';
 
-my $filename = File::Locate::Iterator->default_database_file;
-diag "locate database $filename";
--e $filename
-  or plan skip_all => "no locate database $filename";
+  my $locate_help = `locate --help`;
+  (defined $locate_help && $locate_help =~ /--null/)
+    or plan skip_all => 'locate program not available or no --null option';
 
-plan tests => 5;
+  $filename = File::Locate::Iterator->default_database_file;
+  diag "locate database $filename";
+  -e $filename
+    or plan skip_all => "no locate database $filename";
 
-SKIP: { eval 'use Test::NoWarnings; 1'
-          or skip 'Test::NoWarnings not available', 1; }
+  plan tests => 4;
+}
 
 my $count_limit = ($ENV{'FILE_LOCATE_ITERATOR_T_COUNT_LIMIT'} || 5000);
 

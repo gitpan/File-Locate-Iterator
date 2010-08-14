@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 # Copyright 2009, 2010 Kevin Ryde
 
@@ -22,18 +22,21 @@ use strict;
 use warnings;
 use Test::More;
 
-eval { require Iterator }
-  or plan skip_all => "Iterator.pm not available -- $@";
+use lib 't';
+use MyTestHelpers;
+BEGIN { MyTestHelpers::nowarnings() }
 
-plan tests => 9;
+BEGIN {
+  eval { require Iterator }
+    or plan skip_all => "Iterator.pm not available -- $@";
+
+  plan tests => 8;
+}
 
 require Iterator::Locate;
 
-SKIP: { eval 'use Test::NoWarnings; 1'
-          or skip 'Test::NoWarnings not available', 1; }
-
 {
-  my $want_version = 11;
+  my $want_version = 12;
   is ($Iterator::Locate::VERSION, $want_version, 'VERSION variable');
   is (Iterator::Locate->VERSION,  $want_version, 'VERSION class method');
 

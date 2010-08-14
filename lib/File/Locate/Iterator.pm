@@ -23,29 +23,28 @@ use strict;
 use warnings;
 use Carp;
 
+our $VERSION = 12;
+
 use DynaLoader;
 our @ISA = ('DynaLoader');
-
-# uncomment this to run the ### lines
-#use Smart::Comments;
-
-our $VERSION = 11;
-
-use constant default_use_mmap => 'if_sensible';
-my $header = "\0LOCATE02\0";
-
-if (eval { File::Locate::Iterator->bootstrap($VERSION) }) {
+if (eval { __PACKAGE__->bootstrap($VERSION) }) {
   ### FLI next() from XS
 } else {
   ### FLI next() in perl, XS didn't load: $@
   require File::Locate::Iterator::PP;
 }
 
+# uncomment this to run the ### lines
+#use Smart::Comments;
 
-# default path these days is /var/cache/locate/locatedb
+use constant default_use_mmap => 'if_sensible';
+my $header = "\0LOCATE02\0";
+
+
+# Default path these days is /var/cache/locate/locatedb.
 #
-# back in findutils 4.1 it was $(localstatedir)/locatedb, but there seems to
-# have been no way to ask about the location
+# Back in findutils 4.1 it was $(localstatedir)/locatedb, but there seems to
+# have been no way to ask about the location.
 #
 sub default_database_file {
   # my ($class) = @_;
@@ -56,6 +55,64 @@ sub default_database_file {
   }
 }
 
+# The fields, all meant to be private, are:
+#
+# regexp
+#     qr// regexp of all the 'regexp', 'regexps', 'suffix' and 'suffixes'
+#     parameters.  If no such matches then no such field.  When the field
+#     exists an entry must match the regexp or is skipped.
+#
+# globs
+#     arrayref of strings which are globs to fnmatch().  If no globs then no
+#     such field.  When the field exists an entry must match at least one of
+#     the globs.
+#
+# mref
+#     Ref to a scalar which holds the database contents, or undef if using
+#     fh instead.  It's either a ref to the 'database_str' parameter passed
+#     in, or a ref to a scalar created as an mmap of the file.  The mmap one
+#     is shared among iterators through the File::Locate::Iterator::FileMap
+#     caching.
+#
+# fh
+#     When mref is undef, ref file handle which is to be read from,
+#     otherwise no such field.  This can be either the 'database_fh'
+#     parameter or an opened anonymous handle of the 'database_file'
+#     parameter.
+#
+#     When mmap is used the 'database_fh' is not held here.  The mmap is
+#     made (or rather, looked up in the FileMap cache), and the handle is
+#     then no longer needed and can be closed or garbage collected in the
+#     caller.
+#
+# fm
+#     When using mmap, a File::Locate::Iterator::FileMap object which is the
+#     cache entry for the database file, otherwise no such field.  This is
+#     hung onto to keep it alive while in use.  $self->{'mref'} is
+#     $fm->mmapref in this case.
+#
+# pos
+#     When mref is not undef, an integer offset into the $$mref string which
+#     is the current read position.  The file header is checked in new() so
+#     the initial value is length($header), ie. 10, the position of the
+#     first entry (or possibly EOF).
+#
+# entry
+#     String of the last database entry returned, or no such field before
+#     the first is read, or undef after EOF is hit.  Might be undef instead
+#     of not existing if a hypothetical seek() goes back to the start of the
+#     file.
+#
+# sharelen
+#     Integer which is the number of leading bytes of 'entry' which the next
+#     entry will share with that previous entry.  Initially 0.
+#
+#     This is modified successively by the "adjshare" of each entry as each
+#     takes more or less of the preceding entry.  An adjshare can range from
+#     -sharelen to take nothing at all of the previous entry, up to
+#     length($entry)-sharelen to increment up to take all of the previous
+#     entry.
+#
 sub new {
   my ($class, %options) = @_;
 
@@ -169,8 +226,7 @@ sub new {
   }
 
 
-  if (exists $self->{'mref'}) {
-    my $mref = $self->{'mref'};
+  if (my $mref = $self->{'mref'}) {
     unless ($$mref =~ /^\Q$header/o) { goto &_ERROR_BAD_HEADER }
     $self->{'pos'} = length($header);
   } else {
@@ -185,7 +241,6 @@ sub _ERROR_BAD_HEADER {
   croak 'Invalid database contents (no LOCATE02 header)';
 }
 
-
 # return true if mmap is in use
 # (an actual mmap, not the slightly similar 'database_str' option)
 # this is meant for internal use as a diagnostic ...
@@ -195,7 +250,8 @@ sub _using_mmap {
 }
 
 # Not yet documented, likely worthwhile as long as it works properly.
-# Return empty list for nothing yet?
+# Return empty list for nothing yet?  Same as next().
+# Return empty list at EOF?  At EOF 'entry' is undefed out.
 #
 # =item C<< $entry = $it->current >>
 #
@@ -210,7 +266,11 @@ sub _using_mmap {
 #
 sub _current {
   my ($self) = @_;
-  return $self->{'entry'};
+  if (defined $self->{'entry'}) {
+    return $self->{'entry'};
+  } else {
+    return;
+  }
 }
 
 
@@ -326,9 +386,9 @@ done.
 When multiple iterators access the same file they share the mmap.  The size
 check for C<if_sensible> counts space in all C<File::Locate::Iterator>
 mappings and won't go beyond 1/5 of available data space, which is assumed
-to be (2**wordsize)/4 bytes.  On a 32-bit system this means 200Mb.
-C<if_possible> and C<if_sensible> only map ordinary files because generally
-the file size on char specials is not reliable.
+to be (2**wordsize)/4 bytes and a 32-bit system means 200Mb.  C<if_possible>
+and C<if_sensible> only map ordinary files because generally the file size
+on char specials is not reliable.
 
 =back
 
@@ -365,10 +425,24 @@ installed.
 
 =head1 OTHER NOTES
 
-On some systems C<mmap> may be a bit too "efficient", giving a process more
-of the CPU than processes which make periodic system calls.  This is an OS
-scheduling matter, but you might have to turn down the C<nice> or C<ionice>
-if doing a lot of mmapped work.
+On some systems C<mmap> may be a bit too efficient, giving a process more of
+the CPU than other processes which make periodic system calls.  This is an
+OS scheduling matter, but you might have to turn down the C<nice> or
+C<ionice> if doing a lot of mmapped work.
+
+If an iterator using a file handle is cloned by a C<fork> or new thread then
+generally it can be used by just one of the parent or the child, not both.
+If the handle is anything with a file descriptor then the underlying file
+position is shared by parent and child, so when one reads a block it upsets
+the position seen by the other.  This problem affects almost all code
+working with file handles across a C<fork> or threads.  Iterators using mmap
+instead of a handle work correctly for both forks and threads though.
+
+A locate database is only designed to be read forwards, hence no C<prev>
+method on the interator.  It's not possible to read backwards generally,
+since the start of a record can't be distinguished by its content, and the
+way the "front coding" compression works means it might need data from other
+records an arbitrary distance yet further back.
 
 =head1 ENVIRONMENT VARIABLES
 
@@ -392,27 +466,27 @@ Default locate database, if C<LOCATE_PATH> environment variable not set.
 
 =head1 OTHER WAYS TO DO IT
 
-C<File::Locate> reads a locate database with callbacks.  Whether you prefer
-callbacks or an iterator is a matter of style.  Iterators let you write your
-own loop and have multiple searches in progress simultaneously.
+C<File::Locate> reads a locate database with callbacks instead.  Whether you
+prefer callbacks or an iterator is a matter of style.  Iterators let you
+write your own loop and have multiple searches in progress simultaneously.
 
-When C<File::Locate::Iterator> is built with its XSUB code (requires Perl
-5.10.0 or higher currently) the speed of an iterator is about the same as
-callbacks.
+The speed of an iterator is about the same as callbacks, when
+C<File::Locate::Iterator> is built with its XSUB code (requires Perl 5.10.0
+or higher currently).
 
 Iterators are good for cooperative coroutining like C<POE> or C<Gtk> where
-state must be held in some sort of variable to be progressed by callbacks
-from the main loop.  (C<next()> waits while reading from the database, so
+state must be held in some sort of variable to be progressed by calls from
+the main loop.  Note that C<next()> blocks on reading from the database, so
 the database generally should be a plain file rather than a socket or
-something, so as not to hold up a main loop.)
+something, so as not to hold up a main loop.
 
 If you have the recommended mmap (C<File::Map> module) then iterators share
-an C<mmap> of the database file.  If not then currently each holds a
-separate open handle to the database, which means a file descriptor and
-PerlIO buffering per iterator.  Sharing a handle and making each seek to its
+an C<mmap> of the database file.  Otherwise currently each holds a separate
+open handle to the database, which means a file descriptor and PerlIO
+buffering per iterator.  Sharing a handle and making each one seek to its
 desired position would be possible, but a seek drops buffered data and so
 would go slower.  Some PerlIO trickery might transparently share an fd and
-have some multi-buffering.
+hold buffered blocks from multiple file positions.
 
 =head1 SEE ALSO
 

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 # Copyright 2009, 2010 Kevin Ryde
 
@@ -20,9 +20,144 @@
 use 5.006;
 use strict;
 use warnings;
+use Carp;
 use File::Locate::Iterator;
 
 
+{
+  require PerlIO;
+  print "F_UTF8 is ",PerlIO::F_UTF8(), "\n";
+  print "F_CRLF is ",PerlIO::F_CRLF(), "\n";
+  exit 0;
+}
+
+{
+  require Storable;
+  my $filename = 't/samp.locatedb';
+
+  # GLOBs not storable
+  #   open my $fh, '<', $filename or die "cannot open: $!";
+  #   my $serialized = Storable::freeze(\$fh);
+
+  # mmap copies whole mapped file contents
+  require File::Map;
+  File::Map::map_file (my $m, $filename);
+  my $serialized = Storable::freeze(\$m);
+
+  require Data::Dumper;
+  print Data::Dumper->new([\$serialized],['serialized'])->Dump;
+  exit 0;
+}
+
+
+
+
+
+
+# database_file is not kept to re-open
+# fh can't be properly copied to have its own file position
+#
+sub File::Locate::Iterator::copy {
+  my ($self) = @_;
+  if (exists $self->{'fh'}) {
+    return undef;
+  } else {
+    return bless { %$self }, ref $self;
+  }
+  
+  #     ### copy to: $self
+  #     if (my $fh = $self->{'database_fh'}) {
+  #       open my $newfh, '<&', $fh
+  #         or croak "Cannot dup database file handle: $!";
+  #     }
+  #     return $self;
+}
+
+=over 4
+
+=item C<< $posstr = $it->tell() >>
+
+=item C<< $success = $it->seek($posstr) >>
+
+C<tell> returns a string of bytes representing the current position of
+C<$it>.  (Its precise contents are unspecified and might change.)
+
+C<seek> moves C<$it> to a previously recorded C<$posstr> position.  It
+returns 1 if successful, or 0 and sets C<$!> if not.  A C<seek> can be
+either forwards or backwards.  To work the underlying database file or
+handle must be seekable.  A C<seek> in an mmap or a C<database_str> always
+succeeds.
+
+A C<$posstr> can be used with any iterator object operating on the same
+database contents, by any of the string, handle or mmap methods.  It should
+in fact work with any database which is byte-for-byte identical up to the
+C<$posstr> position.
+
+=back
+
+=cut
+
+  sub File::Locate::Iterator::tell {
+    my ($self) = @_;
+    my $pos;
+    if (exists $self->{'mref'}) {
+      $pos = $self->{'pos'};
+    } else {
+      if (($pos = tell($self->{'fh'})) < 0) {
+        croak "Cannot get file handle position: $!";
+      }
+    }
+    return "$pos $self->{'sharelen'} $self->{'entry'}";
+  }
+
+  sub File::Locate::Iterator::seek {
+    my ($self, $posstr) = @_;
+    my ($pos, $sharelen, $entry) = split / /,$posstr, 3;
+    if (exists $self->{'mref'}) {
+      $self->{'pos'} = $pos;
+    } else {
+      if (! seek($self->{'fh'}, $pos, 0)) {
+        return 0;
+      }
+    }
+    $self->{'entry'} = $entry;
+    $self->{'sharelen'} = $sharelen;
+    return 1;
+  }
+
+{
+  require Config;
+  $Config::Config{useithreads}
+    or die 'No ithreads in this Perl';
+
+  my $filename = 't/samp.locatedb';
+  open MYHANDLE, '<', $filename
+    or die "cannot open: $!";
+
+  eval { require threads } # new in perl 5.8, maybe
+    or die "threads.pm not available -- $@";
+
+  my $it = File::Locate::Iterator->new (database_fh => \*MYHANDLE,
+                                        use_mmap => 0);
+
+  my $t1 = threads->create(sub {
+                             print "fileno ",fileno(MYHANDLE)," tell ",tell(MYHANDLE)," systell ",sysseek(MYHANDLE,0,1),"\n";
+                             print "it ", $it->next,"\n";
+                             close MYHANDLE;
+                             return 't1 done';
+                           });
+
+  print $t1->join,"\n";
+  print "in main\n";
+  print "fileno ",fileno(MYHANDLE)," tell ",tell(MYHANDLE)," systell ",sysseek(MYHANDLE,0,1),"\n";
+  print "it ", $it->next,"\n";
+
+  #   while (defined (my $str = $it->next)) {
+  #     print "got '$str'\n";
+  #   }
+  close MYHANDLE;
+  exit 0;
+}
 
 {
   my $filename = 't/samp.locatedb';

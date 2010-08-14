@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 # Copyright 2010 Kevin Ryde
 
@@ -29,7 +29,7 @@ use Getopt::Long;
 use Iterator::Simple 'igrep';
 use Iterator::Simple::Locate;
 
-our $VERSION = 11;
+our $VERSION = 12;
 
 my @globs;
 my $show_usage = 1;

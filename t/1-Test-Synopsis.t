@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 # Copyright 2009, 2010 Kevin Ryde
 
@@ -21,6 +21,10 @@
 use strict;
 use warnings;
 use Test::More;
+
+use lib 't';
+use MyTestHelpers;
+BEGIN { MyTestHelpers::nowarnings() }
 
 eval 'use Test::Synopsis; 1'
   or plan skip_all => "due to Test::Synopsis not available -- $@";
