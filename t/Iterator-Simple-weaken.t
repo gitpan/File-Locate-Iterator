@@ -23,21 +23,26 @@ use warnings;
 use File::Locate::Iterator;
 use Test::More;
 
-use lib 't';
-use MyTestHelpers;
-use Test::Weaken::ExtraBits;
-BEGIN { MyTestHelpers::nowarnings() }
-
 BEGIN {
   eval { require Iterator::Simple }
     or plan skip_all => "Iterator::Simple not available -- $@";
+}
 
+BEGIN {
   # version 3.002 for "tracked_types"
   eval "use Test::Weaken 3.002; 1"
     or plan skip_all => "due to Test::Weaken 3.002 not available -- $@";
-
-  plan tests => 3;
 }
+
+use lib 't';
+use MyTestHelpers;
+# this is after Iterator::Simple load since 0.05 does an import of
+# UNIVERSAL.pm 'isa', which perl 5.12.0 spams about to warn()
+BEGIN { MyTestHelpers::nowarnings() }
+
+use Test::Weaken::ExtraBits;
+
+plan tests => 3;
 diag ("Test::Weaken version ", Test::Weaken->VERSION);
 diag ("Iterator::Simple version ", Iterator::Simple->VERSION);
 

@@ -26,6 +26,7 @@ devel/mmap-newval.pl
 devel/mmap-overflow.pl
 devel/mmap-rv.pl
 devel/mmap-speed.pl
+devel/mmap-string.pl
 devel/mmap-zero.pl
 devel/mmap.pl
 devel/neg.locatedb

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Locate-Iterator
-version:            12
+version:            13
 abstract:           Read "locate" database file with an iterator.
 author:
     - Kevin Ryde <user42@zip.com.au>

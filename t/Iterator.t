@@ -36,7 +36,7 @@ BEGIN {
 require Iterator::Locate;
 
 {
-  my $want_version = 12;
+  my $want_version = 13;
   is ($Iterator::Locate::VERSION, $want_version, 'VERSION variable');
   is (Iterator::Locate->VERSION,  $want_version, 'VERSION class method');
 

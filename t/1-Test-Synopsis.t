@@ -24,7 +24,9 @@ use Test::More;
 
 use lib 't';
 use MyTestHelpers;
-BEGIN { MyTestHelpers::nowarnings() }
+# no nowarnings() for now since Iterator::Simple 0.05 does an import of
+# UNIVERSAL.pm 'isa', which perl 5.12.0 spams about to warn()
+# BEGIN { MyTestHelpers::nowarnings() }
 
 eval 'use Test::Synopsis; 1'
   or plan skip_all => "due to Test::Synopsis not available -- $@";

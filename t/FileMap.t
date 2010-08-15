@@ -39,7 +39,7 @@ BEGIN {
 }
 
 require File::Locate::Iterator::FileMap;
-my $want_version = 12;
+my $want_version = 13;
 is ($File::Locate::Iterator::FileMap::VERSION, $want_version,
     'VERSION variable');
 is (File::Locate::Iterator::FileMap->VERSION, $want_version,

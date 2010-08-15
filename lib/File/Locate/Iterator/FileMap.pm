@@ -25,7 +25,7 @@ use Scalar::Util;
 # uncomment this to run the ### lines
 #use Smart::Comments;
 
-our $VERSION = 12;
+our $VERSION = 13;
 
 our %cache;
 

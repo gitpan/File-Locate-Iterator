@@ -23,7 +23,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = 12;
+our $VERSION = 13;
 
 use DynaLoader;
 our @ISA = ('DynaLoader');

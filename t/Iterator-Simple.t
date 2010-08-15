@@ -22,18 +22,21 @@ use strict;
 use warnings;
 use Test::More;
 
+BEGIN {
+  eval { require Iterator::Simple }
+    or plan skip_all => "Iterator::Simple not available -- $@";
+}
+
 use lib 't';
 use MyTestHelpers;
+# this is after Iterator::Simple load since 0.05 does an import of
+# UNIVERSAL.pm 'isa', which perl 5.12.0 spams about to warn()
 BEGIN { MyTestHelpers::nowarnings() }
 
-eval { require Iterator::Simple }
-  or plan skip_all => "Iterator::Simple not available -- $@";
-
 plan tests => 5;
-
 require Iterator::Simple::Locate;
 
-my $want_version = 12;
+my $want_version = 13;
 is ($Iterator::Simple::Locate::VERSION, $want_version, 'VERSION variable');
 is (Iterator::Simple::Locate->VERSION,  $want_version, 'VERSION class method');
 { ok (eval { Iterator::Simple::Locate->VERSION($want_version); 1 },
