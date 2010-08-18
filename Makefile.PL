@@ -81,6 +81,7 @@ MyMakeMakerExtras::WriteMakefile
              => { description => 'Be able to run all the examples programs.',
                   requires => { 'Iterator' => 0,
                                 'Iterator::Simple' => 0,
+                                'MooseX::Iterator' => 0,
                               },
                 },
              maximum_interoperation
@@ -89,6 +90,7 @@ MyMakeMakerExtras::WriteMakefile
                                 'Scalar::Util' => 0, # for FileMap bits
                                 'Iterator' => 0,
                                 'Iterator::Simple' => 0,
+                                'MooseX::Iterator' => 0,
                               },
                 },
              maximum_tests

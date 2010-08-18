@@ -28,18 +28,16 @@ BEGIN { MyTestHelpers::nowarnings() }
 
 ## no critic (ProtectPrivateSubs)
 
-BEGIN {
-  eval { require File::Map;
-         File::Map->VERSION('0.24'); # as per FileMap.pm
-         1 }
-    or plan skip_all => "File::Map 0.24 not available -- $@";
-  diag "File::Map version ",File::Map->VERSION;
+eval { require File::Map;
+       File::Map->VERSION('0.24'); # as per FileMap.pm
+       1 }
+  or plan skip_all => "File::Map 0.24 not available -- $@";
+diag "File::Map version ",File::Map->VERSION;
 
-  plan tests => 13;
-}
+plan tests => 13;
 
 require File::Locate::Iterator::FileMap;
-my $want_version = 13;
+my $want_version = 14;
 is ($File::Locate::Iterator::FileMap::VERSION, $want_version,
     'VERSION variable');
 is (File::Locate::Iterator::FileMap->VERSION, $want_version,

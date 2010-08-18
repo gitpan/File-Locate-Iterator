@@ -17,6 +17,11 @@ with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 14, August 2010
+    - fix for mmap of database_fh when filepos!=0
+    - new rewind() method
+    - new MooseX::Iterator::Locate
+
 Version 13, August 2010
     - tests workaround spam from Perl 5.12 UNIVERSAL.pm in Iterator::Simple
 

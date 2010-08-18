@@ -20,19 +20,20 @@ package File::Locate::Iterator::FileMap;
 use 5.006;
 use strict;
 use warnings;
+use Carp;
 use Scalar::Util;
 
 # uncomment this to run the ### lines
 #use Smart::Comments;
 
-our $VERSION = 13;
+our $VERSION = 14;
 
 our %cache;
 
 sub _key {
   my ($fh) = @_;
   my ($dev, $ino, undef, undef, undef, undef, undef, $size) = stat ($fh);
-  return "$dev,$ino,$size";
+  return "$dev,$ino,$size,".tell($fh);
 }
 sub find {
   my ($class, $fh) = @_;
@@ -52,7 +53,14 @@ sub get {
                        mmap => undef,
                      }, $class;
 
-    File::Map::map_handle ($self->{'mmap'}, $fh, '<');
+    my $tell = tell($fh);
+    if ($tell < 0) {
+      # assume if tell() doesn't work then $fh is not mmappable, or in any
+      # case we don't know where the current position is to map
+      croak "Cannot tell() file position: $!";
+    }
+
+    File::Map::map_handle ($self->{'mmap'}, $fh, '<', $tell);
     File::Map::advise ($self->{'mmap'}, 'sequential');
 
     Scalar::Util::weaken ($cache{$key} = $self);
@@ -131,6 +139,8 @@ sub _mmap_size_excessive {
 
 1;
 __END__
+
+=for stopwords mmaps FileMap mmapped Ryde
 
 =head1 NAME
 

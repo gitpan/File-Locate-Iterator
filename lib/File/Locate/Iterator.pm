@@ -23,7 +23,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = 13;
+our $VERSION = 14;
 
 use DynaLoader;
 our @ISA = ('DynaLoader');
@@ -84,6 +84,16 @@ sub default_database_file {
 #     made (or rather, looked up in the FileMap cache), and the handle is
 #     then no longer needed and can be closed or garbage collected in the
 #     caller.
+#
+# fh_start
+#     When fh is set, the tell($fh) position just after the $header in that
+#     fh.  This is where to seek() back to for a $it->rewind.  If tell()
+#     failed then this is -1 and $it->rewind is not possible.
+#
+#     Normally fh_start is simply length($header) for a database starting at
+#     the start of the file, but a database_fh arg which is positioned at
+#     some offset into a file can be read and remembering an fh_start
+#     position lets $it->rewind work on it too.
 #
 # fm
 #     When using mmap, a File::Locate::Iterator::FileMap object which is the
@@ -225,7 +235,6 @@ sub new {
     }
   }
 
-
   if (my $mref = $self->{'mref'}) {
     unless ($$mref =~ /^\Q$header/o) { goto &_ERROR_BAD_HEADER }
     $self->{'pos'} = length($header);
@@ -233,12 +242,28 @@ sub new {
     my $got = '';
     read $self->{'fh'}, $got, length($header);
     if ($got ne $header) { goto &_ERROR_BAD_HEADER }
+    $self->{'fh_start'} = tell $self->{'fh'};
   }
 
   return $self;
 }
 sub _ERROR_BAD_HEADER {
   croak 'Invalid database contents (no LOCATE02 header)';
+}
+
+sub rewind {
+  my ($self) = @_;
+
+  $self->{'sharelen'} = 0;
+  $self->{'entry'} = '';
+  if ($self->{'mref'}) {
+    $self->{'pos'} = length($header);
+  } else {
+    $self->{'fh_start'} > 0
+      or croak "Cannot seek database";
+    seek ($self->{'fh'}, $self->{'fh_start'}, 0)
+      or croak "Cannot seek database: $!";
+  }
 }
 
 # return true if mmap is in use
@@ -277,6 +302,8 @@ sub _current {
 1;
 __END__
 
+=for stopwords filename filenames filesystem slocate filehandle arrayref mmap mmaps seekable PerlIO mmapped XSUB coroutining fd Findutils Ryde wildcard charset wordsize
+
 =head1 NAME
 
 File::Locate::Iterator -- read "locate" database with an iterator
@@ -297,16 +324,16 @@ database.
 
 Locate databases normally hold filenames as a way of finding files faster
 than churning through directories on the filesystem.  Optional glob, suffix
-and regexp options on the iterator let you restrict the entries returned.
+and regexp options on the iterator can restrict the entries returned.
 
 Only "LOCATE02" format files are supported, per current versions of GNU
 C<locate>, not the previous "slocate" format.
 
 Iterators from this module are stand-alone, they don't need any of the
-various iterator frameworks.  See L<Iterator::Locate> and
-L<Iterator::Simple::Locate> to inter-operate with those frameworks.  The
-frameworks have the advantage of convenient ways to grep, map or manipulate
-iterated sequences.
+various iterator frameworks.  See L<Iterator::Locate>,
+L<Iterator::Simple::Locate> and L<MooseX::Iterator::Locate> to inter-operate
+with those frameworks, to use their style or convenient ways to grep, map or
+manipulate iterated sequences.
 
 =head1 FUNCTIONS
 
@@ -317,7 +344,7 @@ iterated sequences.
 =item C<< $it = File::Locate::Iterator->new (key=>value,...) >>
 
 Create and return a new locate database iterator object.  The following
-optional key/value pairs are available.
+optional key/value pairs can be given,
 
 =over 4
 
@@ -331,8 +358,12 @@ C<default_database_file> below.
     $it = File::Locate::Iterator->new
             (database_file => '/foo/bar.db');
 
-A filehandle is read with the usual C<PerlIO>, so it can come from various
-sources but should generally be in binary mode.
+A filehandle is read with the usual C<PerlIO>, so it can use layers and come
+from various sources but should be in binary mode.
+
+=item C<database_str> (string)
+
+The database contents to read in the form of a byte string.
 
 =item C<suffix> (string)
 
@@ -355,16 +386,24 @@ given glob(s) or regexp(s).  For example,
 
 If multiple patterns or suffixes are given then matches of any are returned.
 
-Globs are in the style of the C<locate> program, which means C<fnmatch> with
-no options (see L<File::FnMatch>) and the pattern must match the full entry,
-except a fixed string (none of "*", "?" or "[") can match anywhere.
+Globs are in the style of the C<locate> program which means C<fnmatch> with
+no options (see L<File::FnMatch>) and the pattern matching the full entry
+except a string with no wildcard "*", "?" or "[" can match anywhere.
+
+    glob => '*.c'  # .c files, no .cxx files
+    glob => '.c'   # fixed str, .cxx matches
+
+Globs should be byte strings (not wide chars) since that's how the database
+entries are handled and also suspect C<fnmatch> has no notion of charset
+coding in the strings or patterns.
 
 =item C<use_mmap> (string, default "if_sensible")
 
-Whether to use C<mmap> to access the database.  This is fast and efficient
-when it's possible.  To use mmap you must have the C<File::Map> module, the
-file must fit in available address space, and for a C<database_fh> handle
-there mustn't be any transforming C<PerlIO> layers.  The choices are
+Whether to use C<mmap> to access the database.  This is fast and
+resource-efficient when it can be done.  To use mmap you must have the
+C<File::Map> module, the file must fit in available address space, and for a
+C<database_fh> handle there mustn't be any transforming C<PerlIO> layers.
+The options are
 
     undef           \
     "default"       | use mmap if sensible
@@ -375,9 +414,9 @@ there mustn't be any transforming C<PerlIO> layers.  The choices are
     
 
 Setting C<default>, C<undef> or omitted means C<if_sensible>.
-C<if_sensible> uses mmap if available and the file size is reasonable, and
-for C<database_fh> if it doesn't already have an C<:mmap> layer.
-C<if_possible> lifts those restrictions and uses mmap whenever it can be
+C<if_sensible> uses mmap if available, and the file size is reasonable, and
+for C<database_fh> if it isn't already using an C<:mmap> layer.
+C<if_possible> skips those checks and just uses mmap whenever it can be
 done.
 
     $it = File::Locate::Iterator->new
@@ -386,9 +425,9 @@ done.
 When multiple iterators access the same file they share the mmap.  The size
 check for C<if_sensible> counts space in all C<File::Locate::Iterator>
 mappings and won't go beyond 1/5 of available data space, which is assumed
-to be (2**wordsize)/4 bytes and a 32-bit system means 200Mb.  C<if_possible>
-and C<if_sensible> only map ordinary files because generally the file size
-on char specials is not reliable.
+to be a quarter of the wordsize, so on a 32-bit system total at most 200Mb.
+C<if_possible> and C<if_sensible> restrict themselves to ordinary files
+because generally the file size on char specials is not reliable.
 
 =back
 
@@ -413,6 +452,14 @@ or
 The return is a byte string since it's normally a filename and as of Perl
 5.10 filenames are handled as byte strings.
 
+=item C<< $it->rewind >>
+
+Rewind C<$it> back to the start of the database.  The next C<$it-E<gt>next>
+call will return the first entry.
+
+This is only possible when the underlying database file or handle is a plain
+file or something else seekable, perhaps with seekable PerlIO layers.
+
 =item C<< $filename = File::Locate::Iterator->default_database_file >>
 
 Return the default database file used for C<new> above.  This is meant to be
@@ -425,24 +472,30 @@ installed.
 
 =head1 OTHER NOTES
 
-On some systems C<mmap> may be a bit too efficient, giving a process more of
+On some systems C<mmap> may be a bit too effective, giving a process more of
 the CPU than other processes which make periodic system calls.  This is an
 OS scheduling matter, but you might have to turn down the C<nice> or
 C<ionice> if doing a lot of mmapped work.
 
 If an iterator using a file handle is cloned by a C<fork> or new thread then
-generally it can be used by just one of the parent or the child, not both.
-If the handle is anything with a file descriptor then the underlying file
-position is shared by parent and child, so when one reads a block it upsets
+generally it can be used by the parent or the child, but not both.  If the
+handle is anything with a file descriptor then the underlying file position
+is shared by parent and child, so when one of them reads a block it upsets
 the position seen by the other.  This problem affects almost all code
-working with file handles across a C<fork> or threads.  Iterators using mmap
-instead of a handle work correctly for both forks and threads though.
+working with file handles across C<fork> or threads.  Some C<CLONE> code
+might let threads work correctly, though more slowly, but a C<fork> is
+probably doomed.
+
+Iterators using C<mmap> work correctly for both forks and threads, although
+the mmap C<if_sensible> size calculation and sharing is not thread-aware
+beyond those mmaps existing when the thread is forked off.  Perhaps this
+will improve in the future.
 
 A locate database is only designed to be read forwards, hence no C<prev>
-method on the interator.  It's not possible to read backwards generally,
+method on the iterator.  It's not possible to read backwards generally,
 since the start of a record can't be distinguished by its content, and the
-way the "front coding" compression works means it might need data from other
-records an arbitrary distance yet further back.
+"front coding" means it might need data from other records an arbitrary
+distance yet further back.
 
 =head1 ENVIRONMENT VARIABLES
 
@@ -470,7 +523,7 @@ C<File::Locate> reads a locate database with callbacks instead.  Whether you
 prefer callbacks or an iterator is a matter of style.  Iterators let you
 write your own loop and have multiple searches in progress simultaneously.
 
-The speed of an iterator is about the same as callbacks, when
+The speed of an iterator is about the same as callbacks when
 C<File::Locate::Iterator> is built with its XSUB code (requires Perl 5.10.0
 or higher currently).
 
@@ -490,8 +543,11 @@ hold buffered blocks from multiple file positions.
 
 =head1 SEE ALSO
 
-L<File::Locate>, L<Iterator::Locate>, L<Iterator::Simple::Locate>,
-C<locate(1)> and the GNU Findutils manual, L<File::FnMatch>, L<File::Map>
+L<Iterator::Locate>, L<Iterator::Simple::Locate>,
+L<MooseX::Iterator::Locate>
+
+L<File::Locate>, C<locate(1)> and the GNU Findutils manual,
+L<File::FnMatch>, L<File::Map>
 
 =head1 HOME PAGE
 

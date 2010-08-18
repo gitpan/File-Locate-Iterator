@@ -26,17 +26,14 @@ use lib 't';
 use MyTestHelpers;
 BEGIN { MyTestHelpers::nowarnings() }
 
-BEGIN {
-  eval { require Iterator }
-    or plan skip_all => "Iterator.pm not available -- $@";
+eval { require Iterator }
+  or plan skip_all => "Iterator.pm not available -- $@";
 
-  plan tests => 8;
-}
-
+plan tests => 8;
 require Iterator::Locate;
 
 {
-  my $want_version = 13;
+  my $want_version = 14;
   is ($Iterator::Locate::VERSION, $want_version, 'VERSION variable');
   is (Iterator::Locate->VERSION,  $want_version, 'VERSION class method');
 

@@ -22,30 +22,28 @@ use strict;
 use warnings;
 use Test::More;
 
-# Iterator::Simple 0.05 does an import of UNIVERSAL.pm 'isa', which perl
-# 5.12.0 spams about to warn(), so this check before nowarnings()
 BEGIN {
-  eval { require Iterator::Simple }
-    or plan skip_all => "Iterator::Simple not available -- $@";
+  eval { require MooseX::Iterator }
+    or plan skip_all => "MooseX::Iterator not available -- $@";
 }
 
 use lib 't';
 use MyTestHelpers;
 BEGIN { MyTestHelpers::nowarnings() }
 
-plan tests => 5;
-require Iterator::Simple::Locate;
+plan tests => 18;
+require MooseX::Iterator::Locate;
 
 my $want_version = 14;
-is ($Iterator::Simple::Locate::VERSION, $want_version, 'VERSION variable');
-is (Iterator::Simple::Locate->VERSION,  $want_version, 'VERSION class method');
-{ ok (eval { Iterator::Simple::Locate->VERSION($want_version); 1 },
+is ($MooseX::Iterator::Locate::VERSION, $want_version, 'VERSION variable');
+is (MooseX::Iterator::Locate->VERSION,  $want_version, 'VERSION class method');
+{ ok (eval { MooseX::Iterator::Locate->VERSION($want_version); 1 },
       "VERSION class check $want_version");
   my $check_version = $want_version + 1000;
-  ok (! eval { Iterator::Simple::Locate->VERSION($check_version); 1 },
+  ok (! eval { MooseX::Iterator::Locate->VERSION($check_version); 1 },
       "VERSION class check $check_version");
 }
-# Iterator::Simple::Locate->new object isn't an actual subclass, just a
+# MooseX::Iterator::Locate->new object isn't an actual subclass, just a
 # flavour of Iterator::Simple, so no object version number test
 
 
@@ -66,18 +64,48 @@ sub slurp_zeros {
   return @ret;
 }
 
+require FindBin;
+require File::Spec;
+my $samp_zeros    = File::Spec->catfile ($FindBin::Bin, 'samp.zeros');
+my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
+
 {
-  require FindBin;
-  require File::Spec;
-  my $samp_zeros      = File::Spec->catfile ($FindBin::Bin, 'samp.zeros');
-  my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
-  my $it = Iterator::Simple::Locate->new (database_file => $samp_locatedb);
+  my $it = MooseX::Iterator::Locate->new (database_file => $samp_locatedb);
   my @want = slurp_zeros ($samp_zeros);
-  my @got;
-  while (defined (my $filename = $it->())) {
-    push @got, $filename;
+  {
+    my @got;
+    while ($it->has_next) {
+      push @got, $it->next;
+    }
+    is_deeply (\@got, \@want, 'samp.locatedb');
   }
-  is_deeply (\@got, \@want, 'samp.locatedb');
+  $it->reset;
+  {
+    my @got;
+    while (defined (my $filename = $it->next)) {
+      push @got, $filename;
+    }
+    is_deeply (\@got, \@want, 'samp.locatedb after reset()');
+  }
+}
+
+{
+  my $it = MooseX::Iterator::Locate->new (database_file => $samp_locatedb);
+  my @want = slurp_zeros ($samp_zeros);
+
+  is ($it->peek, $want[0], 'peek');
+  is ($it->peek, $want[0]);
+  is ($it->next, $want[0]);
+  is ($it->peek, $want[1]);
+  is ($it->peek, $want[1]);
+  is ($it->next, $want[1]);
+  $it->reset;
+  is ($it->peek, $want[0]);
+  is ($it->peek, $want[0]);
+  is ($it->next, $want[0]);
+  is ($it->peek, $want[1]);
+  is ($it->peek, $want[1]);
+  is ($it->next, $want[1]);
 }
 
 exit 0;

@@ -29,8 +29,10 @@ devel/mmap-speed.pl
 devel/mmap-string.pl
 devel/mmap-zero.pl
 devel/mmap.pl
+devel/moose.pl
 devel/neg.locatedb
 devel/neg.pl
+devel/rewind.pl
 devel/run.pl
 devel/Shared.pm
 devel/speed.pl
@@ -39,6 +41,7 @@ devel/wait-status.pl
 examples/iterator-simple.pl
 examples/iterator.pl
 examples/locate.pl
+examples/moosex-iterator.pl
 examples/native.pl
 inc/my_pod2html
 inc/MyMakeMakerExtras.pm
@@ -48,6 +51,7 @@ lib/File/Locate/Iterator/FileMap.pm
 lib/File/Locate/Iterator/PP.pm
 lib/Iterator/Locate.pm
 lib/Iterator/Simple/Locate.pm
+lib/MooseX/Iterator/Locate.pm
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
@@ -59,6 +63,8 @@ t/0-Test-DistManifest.t
 t/0-Test-Pod.t
 t/0-Test-YAML-Meta.t
 t/1-Test-Synopsis.t
+t/File-Locate-Iterator-base64.t
+t/File-Locate-Iterator-qp.t
 t/File-Locate-Iterator-weaken.t
 t/File-Locate-Iterator.t
 t/FileMap.t
@@ -67,8 +73,13 @@ t/Iterator-Simple.t
 t/Iterator-weaken.t
 t/Iterator.t
 t/locate-program.t
+t/MooseX-Iterator-Locate-weaken.t
+t/MooseX-Iterator-Locate.t
 t/MyTestHelpers.pm
 t/samp.locatedb
+t/samp.locatedb.base64
+t/samp.locatedb.offset
+t/samp.locatedb.quotedprint
 t/samp.zeros
 t/Test/Weaken/ExtraBits.pm
 META.yml                                 Module meta-data (added by MakeMaker)

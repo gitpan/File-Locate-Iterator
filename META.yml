@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Locate-Iterator
-version:            13
+version:            14
 abstract:           Read "locate" database file with an iterator.
 author:
     - Kevin Ryde <user42@zip.com.au>
@@ -48,12 +48,14 @@ optional_features:
         requires:
             Iterator:          0
             Iterator::Simple:  0
+            MooseX::Iterator:  0
     maximum_interoperation:
         description:  Have maximum inter-operation with other modules (optional supported other stuff).
         requires:
             File::Map:         0.24
             Iterator:          0
             Iterator::Simple:  0
+            MooseX::Iterator:  0
             Scalar::Util:      0
     maximum_tests:
         description:  Have "make test" do as much as possible.

@@ -15,14 +15,14 @@ not run its Makefile.PL or Build.PL.
 Hash: SHA1
 
 SHA1 842745cb706f8f2126506f544492f7a80dbe29b3 COPYING
-SHA1 203a31d1a612a3ae19335c14db87be2250b2d5e1 Changes
+SHA1 507196f2c0a8b6de2a5dfd5518135041fd244882 Changes
 SHA1 c45c7699cc369e47773e235f40e8c749b151e511 Iterator.xs
-SHA1 01b6ba0f319b05636c8e99c1e84598e817075f1b MANIFEST
+SHA1 514fdd4130b5d449274e53cdf05d71e49d4f6727 MANIFEST
 SHA1 9f057ed3ba7d042426c4d899f7685b4ae05076b2 MANIFEST.SKIP
-SHA1 ecd832810cf4bc16bdad10097f9d06ac26cfdb2c META.yml
-SHA1 e5fca0b0d13ce6c3bd54e7da393e52d1f889ae6d Makefile.PL
-SHA1 51b2bf1c2e892da60023ae54ad549aacb11abce6 README
-SHA1 095abd4daf8df17a9d6230aeae880ab007aab1d9 debian/changelog
+SHA1 efbe2277446c075b61f733123455173bae3eaa8e META.yml
+SHA1 d57affe7bdb7287c5f689aab5b3ec60ad00c32df Makefile.PL
+SHA1 a35d7062b94157581085268e8062b583af8b702e README
+SHA1 39eaba29159e8d78b6de707e517cedab7f8d0059 debian/changelog
 SHA1 ac3478d69a3c81fa62e60f5c3696165a4e5e6ac4 debian/compat
 SHA1 63c1d821433532779d09e156bd7a8e40519bb5e6 debian/control
 SHA1 9fdf371e8168995d73649984d161c5a2411bc8a1 debian/copyright
@@ -35,7 +35,7 @@ SHA1 32e1a16cfc3bd62fc6ca11581eebb60f4a9f7e63 devel/Makefile
 SHA1 7fe5164afdd110b5091797a2888fa0aa9f9633f2 devel/Shared.pm
 SHA1 b2313b2b0713731634f9dc1baa5d45782f0f07a9 devel/bad-layer.pl
 SHA1 8c669467e8f8d644240c4fccb3a97ed151eaf01d devel/bin-no-cc/cc
-SHA1 9c922c2970ccad4a43686b8cdf66c12dae350bf5 devel/copy.pl
+SHA1 1e5131948c1087aeb4607c7cb4c58ea71566fd92 devel/copy.pl
 SHA1 faef62f9a7f470078bec4c616cf73b3e17f66f27 devel/crlf.pl
 SHA1 1f4b2591eec135f10358a35b3bc2cd9bb0ada56a devel/croak-local.pl
 SHA1 807830e926a2844caf80e679a49ac3d36013a60c devel/glob.pl
@@ -49,48 +49,59 @@ SHA1 b6ee18ec3ba934be6e620d2bffd16ef178d5bd20 devel/mmap-newval.pl
 SHA1 a2cd39a82e4ce290786f49111fb01e007001d8c7 devel/mmap-overflow.pl
 SHA1 2f109e00c48067e15a373964d49d073e1c9ade2a devel/mmap-rv.pl
 SHA1 d430b1a7a52e3cae3731f822269d17a38602d112 devel/mmap-speed.pl
-SHA1 5a6b7a043a5786a51c6e2dfc8a75ffed4bf6c7ec devel/mmap-string.pl
+SHA1 29bef944c1c0ec2086aa434336e17d556d016a72 devel/mmap-string.pl
 SHA1 91726fc7e19581c720cf439c83107f7a160de8da devel/mmap-zero.pl
 SHA1 a5831ee137cff41e2614c2dde87872b5f98d9fe1 devel/mmap.pl
+SHA1 8845ae7e0c6f81598b7f864b337e0d21de7f7475 devel/moose.pl
 SHA1 1c295e53937b4967fd0c0311cae6d112aa3d2975 devel/neg.locatedb
 SHA1 0592162950ff57492cb1e9b42f94511e1f78ae30 devel/neg.pl
-SHA1 c18cf129a4c25b679614ed6be6b7d40734bbd61a devel/run.pl
+SHA1 2b4aa02681276b6c1d42f2c13848f140fed0748c devel/rewind.pl
+SHA1 78d8e97ee47749a9b082012f2df6696f0a0702d4 devel/run.pl
 SHA1 fa18cd4ae5a3fd692eaa9cd1bdb223cc86162d26 devel/speed.pl
 SHA1 4232a8d1c0867dd855bee997604db4a344e52e58 devel/stat.pl
 SHA1 7e41d065aa5e69a278faacaf9be590a2add1d064 devel/wait-status.pl
 SHA1 f286fb6b8c9c890422db6eb1baa9d752b0f94a63 examples/iterator-simple.pl
 SHA1 128be3bb6c66467af1390ad0c96040f85fd2f3ab examples/iterator.pl
-SHA1 cc986149eadbcbe1e1b4675c128219759c90fe22 examples/locate.pl
+SHA1 0998c166ae351d6f82c27927b971a1b357805e47 examples/locate.pl
+SHA1 48d8028704a90fc5b3bf8288b6d53f5436190839 examples/moosex-iterator.pl
 SHA1 0c2712dfb7ab48c6d9bcdab315fac846de1964f1 examples/native.pl
-SHA1 3f00375a75a28eb28c9216d722220e52aec8e58d inc/MyMakeMakerExtras.pm
+SHA1 8674f138163373c4bb2db3b26cc81de8adf794b6 inc/MyMakeMakerExtras.pm
 SHA1 692a1ddc2ca6b98cac7b48ea40bc1ac1509e8ed9 inc/my_pod2html
-SHA1 eca4148f53618dbf27eca95e0540fc09430e6557 lib/File/Locate/Iterator.pm
-SHA1 f01a01bbc3acfcd8e393b533e1ade0c734e2c9d4 lib/File/Locate/Iterator/FileMap.pm
+SHA1 9f93e6cb3a41fc58fc93ad5c1a2a01372370198d lib/File/Locate/Iterator.pm
+SHA1 b1a8878f07ca72074f550311520965f7aa9a094a lib/File/Locate/Iterator/FileMap.pm
 SHA1 59d5c0e2b6e76bdf0c7928bba8fd85997c6d2692 lib/File/Locate/Iterator/PP.pm
-SHA1 ab6bbdc9c7467c42572b6d458f113b0feaa1c238 lib/Iterator/Locate.pm
-SHA1 0630cda1a29b5c97b8931cca385991904d061778 lib/Iterator/Simple/Locate.pm
+SHA1 bf30f47831b0168ab77d557f2b14c627fa1b92f5 lib/Iterator/Locate.pm
+SHA1 6fa284a99cfd985ac1b2ddc3a8fa5ee46f9aa366 lib/Iterator/Simple/Locate.pm
+SHA1 340e5bcf94a173184e63d072eb3d43f14a25eff1 lib/MooseX/Iterator/Locate.pm
 SHA1 847ddd74867e960646b4c166ab42047db4f9a1c4 ppport.h
 SHA1 9127f78a0dfa04976acbb979dd7862ef59a74c58 t/0-META-read.t
 SHA1 37abd43b41068804ea4bb099fdd89af21be82926 t/0-Test-DistManifest.t
 SHA1 8f93fb4c8f0424a4442cc93c9a2e86342ef55281 t/0-Test-Pod.t
 SHA1 fb517c2fae5ddac559318bf6a224949115ea3129 t/0-Test-YAML-Meta.t
 SHA1 64285b1de7bc9820d36ba04392fbc09656c920e1 t/1-Test-Synopsis.t
+SHA1 9214d8de09d323d1924e348f0194037f784d334e t/File-Locate-Iterator-base64.t
+SHA1 6c0ab8e247a677a26adfecdd058d2e68fba701bb t/File-Locate-Iterator-qp.t
 SHA1 79228853bf0210a73ea58f34e65437032e4a9322 t/File-Locate-Iterator-weaken.t
-SHA1 878f8154fd07e0decbdeb31144fd3083d75596d2 t/File-Locate-Iterator.t
-SHA1 86951bc70404c225e2616007b6dba418be5e339d t/FileMap.t
-SHA1 584df18d5fc3c70923cb781bf967b35830e12a8c t/Iterator-Simple-weaken.t
-SHA1 c1e4d1f7d9f9be47204e502462f621e8f0038bdd t/Iterator-Simple.t
-SHA1 b641cb9dd0ba80016de559eeb9c3ca37b49c1a50 t/Iterator-weaken.t
-SHA1 008e13517fca4db04ee29e5f34c0aa119ad63708 t/Iterator.t
+SHA1 3a1b60d0917721a16fc54d8442c55dcc7df111f7 t/File-Locate-Iterator.t
+SHA1 88286348813e6f34c8c8a82ba6be78e224e0543b t/FileMap.t
+SHA1 df91e82a946f1d4656518b51ba241102c43169a2 t/Iterator-Simple-weaken.t
+SHA1 d97b5587dd49de2a0cdd6c740471c394c3ea8d56 t/Iterator-Simple.t
+SHA1 2867e087620a4a901904bb02f09e5fea6248179e t/Iterator-weaken.t
+SHA1 e96ad6f567b2cdea28b718f0695f8d066f10d3a6 t/Iterator.t
+SHA1 b96e98ce2152147d3b37791cb75646dbf7a275b2 t/MooseX-Iterator-Locate-weaken.t
+SHA1 860ea98adba14084e69ad8e73b543939ee7e3c1b t/MooseX-Iterator-Locate.t
 SHA1 b98ec63aaa140101fe850d117c483d88b25a32a9 t/MyTestHelpers.pm
 SHA1 ebce7bd61ed66cdc0103689ffb7e8844a0a71696 t/Test/Weaken/ExtraBits.pm
 SHA1 cf70b4d00bdb26b87c2703f3375c72c440d96316 t/locate-program.t
 SHA1 be919e8c842d0a1b379199f7034753dc89d60a4c t/samp.locatedb
+SHA1 6f63d95d23049d7d04c9e280dec2a4bc37ffcc29 t/samp.locatedb.base64
+SHA1 85c4796dbbcdb5b9f0f4ba224c0d364329746102 t/samp.locatedb.offset
+SHA1 ae26e2b329fd691b3c2b867184b4bc9610158aa4 t/samp.locatedb.quotedprint
 SHA1 06a130c2dd05f1cce306ffd4658291b85881dd4e t/samp.zeros
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iD8DBQFMZ0DNLFMCIV9q3ToRAtaFAJsEf38Hwl9blBp4ntuPzDWjz77xXACeMI7+
-lmd0AFRcCkv2uvFv1vUj0ks=
-=A2av
+iD8DBQFMbGe1LFMCIV9q3ToRAohAAKCHFS1wt5bzLLn29ckyFonSvL1jMQCcDjQN
+/hU/IDOWVnc/5vHT9PBNR08=
+=SUVB
 -----END PGP SIGNATURE-----

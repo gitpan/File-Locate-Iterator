@@ -25,6 +25,66 @@ use File::Locate::Iterator;
 
 
 {
+  require Config;
+  $Config::Config{useithreads}
+    or die 'No ithreads in this Perl';
+  eval { require threads } # new in perl 5.8, maybe
+    or die "threads.pm not available -- $@";
+
+  my $filename = 't/samp.locatedb';
+  my $it = File::Locate::Iterator->new (database_file => $filename,
+                                        use_mmap => 1);
+  print "main   it: ",$it,"\n";
+  print "main   fm: ",$it->{'fm'},"\n";
+
+  my $t1 = threads->create(sub {
+                             print "thread it: ",$it,"\n";
+                             print "thread fm: ",$it->{'fm'},"\n";
+                             print "thread: ", $it->next,"\n";
+                             undef $it;
+                             return 't1 done';
+                           });
+
+  print $t1->join,"\n";
+  print "main: ", $it->next,"\n";
+  exit 0;
+}
+
+{
+  require Config;
+  $Config::Config{useithreads}
+    or die 'No ithreads in this Perl';
+
+  my $filename = 't/samp.locatedb';
+  open MYHANDLE, '<', $filename
+    or die "cannot open: $!";
+
+  eval { require threads } # new in perl 5.8, maybe
+    or die "threads.pm not available -- $@";
+
+  my $it = File::Locate::Iterator->new (database_fh => \*MYHANDLE,
+                                        use_mmap => 0);
+
+  my $t1 = threads->create(sub {
+                             print "fileno ",fileno(MYHANDLE)," tell ",tell(MYHANDLE)," systell ",sysseek(MYHANDLE,0,1),"\n";
+                             print "it ", $it->next,"\n";
+                             close MYHANDLE;
+                             return 't1 done';
+                           });
+
+  print $t1->join,"\n";
+  print "in main\n";
+  print "fileno ",fileno(MYHANDLE)," tell ",tell(MYHANDLE)," systell ",sysseek(MYHANDLE,0,1),"\n";
+  print "it ", $it->next,"\n";
+
+  #   while (defined (my $str = $it->next)) {
+  #     print "got '$str'\n";
+  #   }
+  close MYHANDLE;
+  exit 0;
+}
+
+{
   require PerlIO;
   print "F_UTF8 is ",PerlIO::F_UTF8(), "\n";
   print "F_CRLF is ",PerlIO::F_CRLF(), "\n";
@@ -64,7 +124,7 @@ sub File::Locate::Iterator::copy {
   } else {
     return bless { %$self }, ref $self;
   }
-  
+
   #     ### copy to: $self
   #     if (my $fh = $self->{'database_fh'}) {
   #       open my $newfh, '<&', $fh
@@ -125,39 +185,7 @@ C<$posstr> position.
     return 1;
   }
 
-{
-  require Config;
-  $Config::Config{useithreads}
-    or die 'No ithreads in this Perl';
 
-  my $filename = 't/samp.locatedb';
-  open MYHANDLE, '<', $filename
-    or die "cannot open: $!";
-
-  eval { require threads } # new in perl 5.8, maybe
-    or die "threads.pm not available -- $@";
-
-  my $it = File::Locate::Iterator->new (database_fh => \*MYHANDLE,
-                                        use_mmap => 0);
-
-  my $t1 = threads->create(sub {
-                             print "fileno ",fileno(MYHANDLE)," tell ",tell(MYHANDLE)," systell ",sysseek(MYHANDLE,0,1),"\n";
-                             print "it ", $it->next,"\n";
-                             close MYHANDLE;
-                             return 't1 done';
-                           });
-
-  print $t1->join,"\n";
-  print "in main\n";
-  print "fileno ",fileno(MYHANDLE)," tell ",tell(MYHANDLE)," systell ",sysseek(MYHANDLE,0,1),"\n";
-  print "it ", $it->next,"\n";
-
-  #   while (defined (my $str = $it->next)) {
-  #     print "got '$str'\n";
-  #   }
-  close MYHANDLE;
-  exit 0;
-}
 
 {
   my $filename = 't/samp.locatedb';

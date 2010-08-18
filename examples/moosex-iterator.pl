@@ -17,24 +17,22 @@
 # You should have received a copy of the GNU General Public License along
 # with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
-# print "perl $]\n";
 
+# Using the MooseX::Iterator module.
 
 use strict;
 use warnings;
-use File::Map 0.27;
+use MooseX::Iterator::Locate;
 
-my $string = 'abc';
+my $it = MooseX::Iterator::Locate->new (glob => '*.c');
+my $count = 0;
 
-my $fh;
-open $fh, '<', \$string
-  or die "oops, cannot open string";
+while ($it->has_next) {
+  print $it->next,"\n";
 
-my $mmap;
-File::Map::map_handle ($mmap, $fh);
-
-if ($mmap =~ /^xx/) {
-  print "match\n";
-} else {
-  print "no match\n";
+  if ($count++ > 10) {
+    print "...\n";
+    last;
+  }
 }
+exit 0;

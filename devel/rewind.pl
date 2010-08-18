@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2010 Kevin Ryde
+# Copyright 2009, 2010 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -17,24 +17,32 @@
 # You should have received a copy of the GNU General Public License along
 # with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
-# print "perl $]\n";
-
-
 use strict;
 use warnings;
-use File::Map 0.27;
+use Socket;
 
-my $string = 'abc';
-
-my $fh;
-open $fh, '<', \$string
-  or die "oops, cannot open string";
-
-my $mmap;
-File::Map::map_handle ($mmap, $fh);
-
-if ($mmap =~ /^xx/) {
-  print "match\n";
-} else {
-  print "no match\n";
+{
+  open my $fh, '<:gzip', '/usr/share/doc/gzip/README.gz'
+    or die "cannot open: $!";
+  # print <$fh>;
+  seek ($fh, 0, 0)
+    or die "cannot seek: $!";
+  exit 0;
+}
+# {
+#   my ($rh, $wh);
+#   socket ($rh, $wh) or die;
+#   seek $rh, 0, 0 or die $!;
+#   exit 0;
+# }
+{
+  my ($rh, $wh);
+  pipe ($rh, $wh) or die;
+  seek $rh, 0, 0 or die $!;
+  exit 0;
+}
+{
+  open my $fh, '</dev/tty5' or die;
+  seek $fh, 0, 0 or die $!;
+  exit 0;
 }

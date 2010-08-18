@@ -23,6 +23,7 @@
 # seek fileno, if seekable
 # replicate layers?
 
+use 5.004; # sysseek()
 use strict;
 use warnings;
 

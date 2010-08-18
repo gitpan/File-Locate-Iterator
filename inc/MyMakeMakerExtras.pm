@@ -298,9 +298,9 @@ check-copyright-years:
 	      | debian/patches/*.diff | debian/source/format \
 	      | COPYING | MANIFEST* | SIGNATURE | META.yml \
 	      | version.texi | */version.texi \
-	      | *utf16* \
+	      | *utf16* | examples/rs''s2lea''fnode.conf \
 	      | */Math''Image/ln2.gz | */Math''Image/pi.gz \
-	      | *.mo | *.locatedb | t/samp.*) \
+	      | *.mo | *.locatedb* | t/samp.*) \
 	        continue ;; \
 	      *.gz) GREP=zgrep ;; \
 	    esac; \

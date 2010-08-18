@@ -24,7 +24,7 @@ use warnings;
 use File::Locate::Iterator;
 use Iterator::Simple;
 
-our $VERSION = 13;
+our $VERSION = 14;
 
 sub new {
   my $class = shift;
@@ -34,6 +34,8 @@ sub new {
 
 1;
 __END__
+
+=for stopwords Ryde
 
 =head1 NAME
 

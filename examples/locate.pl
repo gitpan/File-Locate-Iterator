@@ -23,13 +23,14 @@
 # to implement the --limit and --existing options.
 #
 
+use 5.006;
 use strict;
 use warnings;
 use Getopt::Long;
 use Iterator::Simple 'igrep';
 use Iterator::Simple::Locate;
 
-our $VERSION = 13;
+our $VERSION = 14;
 
 my @globs;
 my $show_usage = 1;
@@ -49,7 +50,7 @@ GetOptions('0|null'         => sub { $output_terminator = "\0" },
            'l|limit=i'      => \$option_limit,
            'm|mmap'         => sub { $use_mmap = 1 },
            's|stdio'        => sub { $use_mmap = 0 },
-           '<>'             => sub { 
+           '<>'             => sub {
              # stringize against Getopt::Long incompatible change to option
              # callbacks
              push @globs, "$_[0]";

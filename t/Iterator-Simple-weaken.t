@@ -59,7 +59,8 @@ require Iterator::Simple::Locate;
 {
   my $leaks = Test::Weaken::leaks
     ({ constructor => sub {
-         return Iterator::Simple::Locate->new (database_file => $samp_locatedb)
+         return Iterator::Simple::Locate->new
+           (database_file => $samp_locatedb);
        },
        contents => \&Test::Weaken::ExtraBits::contents_glob_IO,
        tracked_types => [ 'GLOB', 'IO' ],

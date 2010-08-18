@@ -20,15 +20,16 @@
 use 5.006;
 use strict;
 use warnings;
-use File::Locate::Iterator;
-use Test::More tests => 91;
+use Test::More tests => 106;
 
 use lib 't';
 use MyTestHelpers;
 BEGIN { MyTestHelpers::nowarnings() }
 
+use File::Locate::Iterator;
+
 {
-  my $want_version = 13;
+  my $want_version = 14;
   is ($File::Locate::Iterator::VERSION, $want_version, 'VERSION variable');
   is (File::Locate::Iterator->VERSION,  $want_version, 'VERSION class method');
 
@@ -62,6 +63,8 @@ require FindBin;
 require File::Spec;
 my $samp_zeros    = File::Spec->catfile ($FindBin::Bin, 'samp.zeros');
 my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
+my $samp_locatedb_offset = File::Spec->catfile ($FindBin::Bin,
+                                                'samp.locatedb.offset');
 diag "Test samp_zeros=$samp_zeros, samp_locatedb=$samp_locatedb";
 
 
@@ -106,13 +109,52 @@ if ($] >= 5.008) {
   {
     my $it = File::Locate::Iterator->new (database_file => $samp_locatedb);
     my @want = @samp_zeros;
-    my @got;
-    my $noinfloop = no_inf_loop($samp_locatedb);
-    while (defined (my $filename = $it->next)) {
-      push @got, $filename;
-      $noinfloop->();
+    {
+      my @got;
+      my $noinfloop = no_inf_loop($samp_locatedb);
+      while (defined (my $filename = $it->next)) {
+        push @got, $filename;
+        $noinfloop->();
+      }
+      is_deeply (\@got, \@want, 'samp.locatedb full');
     }
-    is_deeply (\@got, \@want, 'samp.locatedb full');
+    diag "rewind(), fh_start ",$it->{'fh_start'};
+    $it->rewind;
+    {
+      my @got;
+      my $noinfloop = no_inf_loop($samp_locatedb);
+      while (defined (my $filename = $it->next)) {
+        push @got, $filename;
+        $noinfloop->();
+      }
+      is_deeply (\@got, \@want, 'samp.locatedb full, after rewind');
+    }
+  }
+
+  {
+    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
+                                          use_mmap => 0);
+    my @want = @samp_zeros;
+    {
+      my @got;
+      my $noinfloop = no_inf_loop($samp_locatedb);
+      while (defined (my $filename = $it->next)) {
+        push @got, $filename;
+        $noinfloop->();
+      }
+      is_deeply (\@got, \@want, 'samp.locatedb full, no mmap');
+    }
+    diag "rewind(), no mmap, fh_start ",$it->{'fh_start'};
+    $it->rewind;
+    {
+      my @got;
+      my $noinfloop = no_inf_loop($samp_locatedb);
+      while (defined (my $filename = $it->next)) {
+        push @got, $filename;
+        $noinfloop->();
+      }
+      is_deeply (\@got, \@want, 'samp.locatedb full, no mmap, after rewind');
+    }
   }
 
   # with 'glob'
@@ -186,14 +228,22 @@ if ($] >= 5.008) {
       binmode (MYHANDLE)
         or die "oops, cannot set binary mode on MYHANDLE";
 
+      open OFFHANDLE, '<', $samp_locatedb_offset
+        or die "oops, cannot open $samp_locatedb";
+      binmode (OFFHANDLE)
+        or die "oops, cannot set binary mode on OFFHANDLE";
+      seek OFFHANDLE, 87, 0
+        or die "oops, cannot seek OFFHANDLE";
+
       foreach my $database
-        (['database_file',    database_file => $samp_locatedb],
-         ['database_fh ref',  database_fh => \*MYHANDLE],
+        (['database_file',      database_file => $samp_locatedb],
+         ['database_fh ref',    database_fh => \*MYHANDLE],
+         ['database_fh offset', database_fh => \*OFFHANDLE ],
          $database_fh_raw,
          $database_fh_str) {
       SKIP: {
           ref $database
-            or skip $database, 1;
+            or skip $database, 2;
           my ($database_desc, @database_option) = @$database;
 
           my $desc = "$database_desc, use_mmap=$use_mmap";
@@ -202,24 +252,36 @@ if ($] >= 5.008) {
           {
             my $it = File::Locate::Iterator->new (@database_option,
                                                   use_mmap => $use_mmap);
-            my $noinfloop = no_inf_loop("$desc");
+            $desc .= ($it->_using_mmap ? "yes" : "no");
             my @want = @samp_zeros;
-            my @got;
-            while (my ($filename) = $it->next) {
-              push @got, $filename;
-              $noinfloop->();
-            }
+            {
+              my $noinfloop = no_inf_loop("$desc");
+              my @got;
+              while (my ($filename) = $it->next) {
+                push @got, $filename;
+                $noinfloop->();
+              }
 
-            if (0) {
-              require Data::Dumper;
-              diag (Data::Dumper->new([\@samp_zeros],['samp_zeros'])
-                    ->Useqq(1)->Dump);
-              diag (Data::Dumper->new([\@got],['got'])
-                    ->Useqq(1)->Dump);
+              if (0) {
+                require Data::Dumper;
+                diag (Data::Dumper->new([\@samp_zeros],['samp_zeros'])
+                      ->Useqq(1)->Dump);
+                diag (Data::Dumper->new([\@got],['got'])
+                      ->Useqq(1)->Dump);
+              }
+              is_deeply (\@got, \@want, "samp.locatedb  $desc");
             }
-            is_deeply (\@got, \@want,
-                       "samp.locatedb  $desc, using_mmap="
-                       . ($it->_using_mmap ? "yes" : "no"));
+            diag "$desc rewind";
+            $it->rewind;
+            {
+              my $noinfloop = no_inf_loop("$desc");
+              my @got;
+              while (my ($filename) = $it->next) {
+                push @got, $filename;
+                $noinfloop->();
+              }
+              is_deeply (\@got, \@want, "samp.locatedb, rewind,  $desc");
+            }
           }
         }
       }

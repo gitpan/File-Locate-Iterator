@@ -23,24 +23,26 @@ use warnings;
 use File::Locate::Iterator;
 use Test::More;
 
-use lib 't';
-use MyTestHelpers;
-use Test::Weaken::ExtraBits;
-BEGIN { MyTestHelpers::nowarnings() }
+BEGIN {
+  eval { require MooseX::Iterator }
+    or plan skip_all => "MooseX::Iterator not available -- $@";
+}
 
 BEGIN {
-  eval { require Iterator }
-    or plan skip_all => "Iterator.pm not available -- $@";
-
   # version 3.002 for "tracked_types"
   eval "use Test::Weaken 3.002; 1"
     or plan skip_all => "due to Test::Weaken 3.002 not available -- $@";
-
-  plan tests => 3;
 }
 
+use lib 't';
+use MyTestHelpers;
+BEGIN { MyTestHelpers::nowarnings() }
+
+use Test::Weaken::ExtraBits;
+
+plan tests => 3;
 diag ("Test::Weaken version ", Test::Weaken->VERSION);
-diag ("Iterator::Simple version ", Iterator::Simple->VERSION);
+diag ("MooseX::Iterator version ", MooseX::Iterator->VERSION);
 
 
 #-----------------------------------------------------------------------------
@@ -49,18 +51,19 @@ use FindBin;
 use File::Spec;
 my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
 
-require Iterator::Locate;
+require MooseX::Iterator::Locate;
 
 # database_file
 {
   my $leaks = Test::Weaken::leaks
     ({ constructor => sub {
-         return Iterator::Locate->new (database_file => $samp_locatedb);
+         return MooseX::Iterator::Locate->new
+           (database_file => $samp_locatedb);
        },
        contents => \&Test::Weaken::ExtraBits::contents_glob_IO,
        tracked_types => [ 'GLOB', 'IO' ],
      });
-  is ($leaks, undef, 'deep garbage collection');
+  is ($leaks, undef, 'deep garbage collection, database_file');
   if ($leaks && defined &explain) {
     diag "Test-Weaken ", explain $leaks;
   }
@@ -73,13 +76,13 @@ require Iterator::Locate;
          my $filename = $samp_locatedb;
          open my $fh, '<', $filename
            or die "oops, cannot open $filename";
-         return [ Iterator::Locate->new (database_fh => $fh),
+         return [ MooseX::Iterator::Locate->new (database_fh => $fh),
                   $fh ];
        },
        contents => \&Test::Weaken::ExtraBits::contents_glob_IO,
        tracked_types => [ 'GLOB', 'IO' ],
      });
-  is ($leaks, undef, 'deep garbage collection');
+  is ($leaks, undef, 'deep garbage collection, fh, with mmap');
   if ($leaks && defined &explain) {
     diag "Test-Weaken ", explain $leaks;
   }
@@ -92,14 +95,14 @@ require Iterator::Locate;
          my $filename = $samp_locatedb;
          open my $fh, '<', $filename
            or die "oops, cannot open $filename";
-         return [ Iterator::Locate->new (database_fh => $fh,
-                                         use_mmap => 0),
+         return [ MooseX::Iterator::Locate->new (database_fh => $fh,
+                                                 use_mmap => 0),
                   $fh ];
        },
        contents => \&Test::Weaken::ExtraBits::contents_glob_IO,
        tracked_types => [ 'GLOB', 'IO' ],
      });
-  is ($leaks, undef, 'deep garbage collection');
+  is ($leaks, undef, 'deep garbage collection, fh, no mmap');
   if ($leaks && defined &explain) {
     diag "Test-Weaken ", explain $leaks;
   }

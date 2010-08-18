@@ -20,8 +20,8 @@ with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 File::Locate::Iterator reads a "locate" database file, similar to
 what File::Locate does, but done as an iterator rather than callbacks.
 
-Optional support for Iterator.pm or Iterator::Simple iterators is
-included, or the module can just be used natively.
+The module can be used natively, or there's optional support for
+Iterator.pm, Iterator::Simple and MooseX::Iterator style iterators.
 
 The File-Locate-Iterator home page is
 
