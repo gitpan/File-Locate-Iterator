@@ -29,7 +29,7 @@ BEGIN { MyTestHelpers::nowarnings() }
 use File::Locate::Iterator;
 
 {
-  my $want_version = 14;
+  my $want_version = 15;
   is ($File::Locate::Iterator::VERSION, $want_version, 'VERSION variable');
   is (File::Locate::Iterator->VERSION,  $want_version, 'VERSION class method');
 

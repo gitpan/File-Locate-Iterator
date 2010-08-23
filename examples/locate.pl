@@ -30,7 +30,7 @@ use Getopt::Long;
 use Iterator::Simple 'igrep';
 use Iterator::Simple::Locate;
 
-our $VERSION = 14;
+our $VERSION = 15;
 
 my @globs;
 my $show_usage = 1;

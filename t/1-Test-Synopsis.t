@@ -44,6 +44,11 @@ if (! eval { require Iterator::Simple }) {
   @files = grep {! m{/Iterator/Simple/Locate.pm} } @files;
 }
 
+if (! eval { require MooseX::Iterator }) {
+  diag "skip MooseX::Iterator::Locate since MooseX::Iterator not available -- $@";
+  @files = grep {! m{/MooseX/Iterator/Locate.pm} } @files;
+}
+
 plan tests => 1 * scalar @files;
 
 Test::Synopsis::synopsis_ok(@files);
