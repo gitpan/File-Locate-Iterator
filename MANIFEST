@@ -12,6 +12,7 @@ devel/bin-no-cc/cc
 devel/copy.pl
 devel/crlf.pl
 devel/croak-local.pl
+devel/File-Locate-Iterator-subfile.t
 devel/File/FnMatch/Regexp.pm
 devel/glob.pl
 devel/GlobRegexp.pm
@@ -58,11 +59,6 @@ MANIFEST.SKIP
 ppport.h
 README
 SIGNATURE
-t/0-META-read.t
-t/0-Test-DistManifest.t
-t/0-Test-Pod.t
-t/0-Test-YAML-Meta.t
-t/1-Test-Synopsis.t
 t/File-Locate-Iterator-base64.t
 t/File-Locate-Iterator-qp.t
 t/File-Locate-Iterator-weaken.t
@@ -80,6 +76,12 @@ t/samp.locatedb
 t/samp.locatedb.base64
 t/samp.locatedb.offset
 t/samp.locatedb.quotedprint
+t/samp.locatedb.subfile
 t/samp.zeros
 t/Test/Weaken/ExtraBits.pm
+xt/0-META-read.t
+xt/0-Test-DistManifest.t
+xt/0-Test-Pod.t
+xt/0-Test-YAML-Meta.t
+xt/1-Test-Synopsis.t
 META.yml                                 Module meta-data (added by MakeMaker)

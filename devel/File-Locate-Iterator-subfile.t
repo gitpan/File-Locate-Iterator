@@ -18,8 +18,10 @@
 # with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# Exercise reading from a PerlIO::via::QuotedPrint, if that module
-# available.
+# Exercise reading from a PerlIO::subfile, if that module available.
+# Including a rewind in that subfile.
+#
+# Doesn't work with PERLIO=crlf.  Should it?
 
 
 use 5.006;
@@ -27,20 +29,18 @@ use strict;
 use warnings;
 use Test::More;
 
-# PerlIO::via::QuotedPrint 0.06 doesn't support seek(), not even just back
-# to the start of the file, so no $it->rewind test
-
-eval { require PerlIO::via::QuotedPrint }
-  or plan skip_all => "PerlIO::via::QuotedPrint not available -- $!";
+# no need to preload
+# eval { require PerlIO::subfile }
+#   or plan skip_all => "PerlIO::subfile not available -- $!";
 
 # {
-#   require PerlIO::via::QuotedPrint;
-#   open my $fh, '<', 't/samp.locatedb' or die;
+#   open my $fh, '<', 't/samp.locatedb.offset' or die;
 #   my $contents = do { local $/ = undef; <$fh> }; # slurp
 #   close $fh or die;
 #   undef $fh;
-#   open $fh, '>:via(QuotedPrint)', 't/samp.locatedb.quotedprint' or die;
+#   open $fh, '>', 't/samp.locatedb.subfile' or die;
 #   print $fh $contents;
+#   print $fh "\0" x 45;
 #   close $fh or die;
 #   exit 0;
 # }
@@ -48,14 +48,14 @@ eval { require PerlIO::via::QuotedPrint }
 require FindBin;
 require File::Spec;
 my $samp_zeros = File::Spec->catfile ($FindBin::Bin, 'samp.zeros');
-my $samp_locatedb_qp
-  = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb.quotedprint');
-diag "File samp_locatedb_qp=$samp_locatedb_qp";
+my $samp_locatedb_subfile
+  = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb.subfile');
+diag "File samp_locatedb_subfile=$samp_locatedb_subfile";
 
 # if PerlIO not available then this can fail, or at least when mangling it
 # with Test::Without::Module
-eval { open my $fh, '<:via(QuotedPrint)', $samp_locatedb_qp }
-  or plan skip_all => "Oops, cannot open <:via(QuotedPrint) -- $!";
+eval { open my $fh, '<:subfile(start=87,end=3770)', $samp_locatedb_subfile }
+  or plan skip_all => "skip, cannot open <:subfile(start=87,end=3770) -- $!";
 
 use lib 't';
 use MyTestHelpers;
@@ -81,57 +81,63 @@ my @samp_zeros;
 }
 
 #-----------------------------------------------------------------------------
-# samp.locatedb.qp
+# samp.locatedb.subfile
 
 sub no_inf_loop {
   my ($name) = @_;
   my $count = 0;
   return sub {
-    if ($count++ > 20) { die "Oops, eof not reached on $name"; }
+    if ($count++ > 50) { die "Oops, eof not reached on $name"; }
   };
 }
 
 my $orig_RS = $/;
 
 {
-  open my $fh, '<:via(QuotedPrint)', $samp_locatedb_qp
-    or die "Oops, cannot open again with QuotedPrint: $!";
+  open my $fh, '<:subfile(start=87,end=3770)', $samp_locatedb_subfile
+    or die "Oops, cannot open again with :subfile: $!";
+  # binmode ($fh) or die "Oops, cannot set binmode on subfile: $!";;
+  if (PerlIO->can('get_layers')) {
+    diag "Layers: ", PerlIO::get_layers($fh, details=>1);
+  }
+
   my $it = File::Locate::Iterator->new (database_fh => $fh);
   my @want = @samp_zeros;
-  my @got;
-  my $noinfloop = no_inf_loop($samp_locatedb_qp);
-  while (defined (my $filename = $it->next)) {
-    push @got, $filename;
-    $noinfloop->();
+  {
+    my @got;
+    my $noinfloop = no_inf_loop($samp_locatedb_subfile);
+    while (defined (my $filename = $it->next)) {
+      push @got, $filename;
+      $noinfloop->();
+    }
+    is_deeply (\@got, \@want, 'samp.locatedb.subfile full');
   }
-  is_deeply (\@got, \@want, 'samp.locatedb.qp full');
+  $it->rewind;
+  {
+    my @got;
+    my $noinfloop = no_inf_loop($samp_locatedb_subfile);
+    while (defined (my $filename = $it->next)) {
+      push @got, $filename;
+      $noinfloop->();
+    }
+    is_deeply (\@got, \@want, 'samp.locatedb.subfile full, after rewind');
+  }
 }
 
 # with 'glob'
 {
-  open my $fh, '<:via(QuotedPrint)', $samp_locatedb_qp
-    or die "Oops, cannot open again with QuotedPrint: $!";
+  open my $fh, '<:subfile(start=87,end=3770)', $samp_locatedb_subfile
+    or die "Oops, cannot open again with :subfile: $!";
   my $it = File::Locate::Iterator->new (database_fh => $fh,
                                         glob => '*.c');
-  my $noinfloop = no_inf_loop("$samp_locatedb_qp with *.c");
+  my $noinfloop = no_inf_loop("$samp_locatedb_subfile with *.c");
   my @want = grep {/\.c$/} @samp_zeros;
   my @got;
   while (defined (my $filename = $it->next)) {
     push @got, $filename;
     $noinfloop->();
   }
-  is_deeply (\@got, \@want, 'samp.locatedb.qp glob *.c');
-}
-
-# with 'use_mmap=1' should fail
-{
-  open my $fh, '<:via(QuotedPrint)', $samp_locatedb_qp
-    or die "Oops, cannot open again with QuotedPrint: $!";
-  ok (! eval {
-    File::Locate::Iterator->new (database_fh => $fh,
-                                 use_mmap => 1);
-    1 },
-      'samp.locatedb.qp with use_mmap=1 should fail');
+  is_deeply (\@got, \@want, 'samp.locatedb.subfile glob *.c');
 }
 
 is ($/, $orig_RS, 'input record separator unchanged');

@@ -23,6 +23,7 @@ use warnings;
 use File::Locate::Iterator;
 use Data::Dumper;
 
+
 {
   # open.pm is lexical, PERLIO is global
   # use open IN => ':crlf';
@@ -41,15 +42,6 @@ use Data::Dumper;
 }
 
 {
-  open my $fh, '|/usr/lib/locate/frcode -0 >/tmp/crlf.db' or die;
-  print $fh "abc\r\ndef\0";
-  print $fh "abc\r\n\0";
-  print $fh "two\r\n\0";
-  close $fh;
-  exit 0;
-}
-
-{
   my $filename = File::Locate::Iterator->default_database_file;
   print "filename $filename ",(-s $filename),"\n";
   require Perl6::Slurp;
@@ -61,4 +53,14 @@ use Data::Dumper;
   }
   exit 0;
 }
+
+{
+  open my $fh, '|/usr/lib/locate/frcode -0 >/tmp/crlf.db' or die;
+  print $fh "abc\r\ndef\0";
+  print $fh "abc\r\n\0";
+  print $fh "two\r\n\0";
+  close $fh;
+  exit 0;
+}
+
 

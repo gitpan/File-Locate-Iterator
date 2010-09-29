@@ -23,6 +23,45 @@ use warnings;
 use Carp;
 use File::Locate::Iterator;
 
+# uncomment this to run the ### lines
+use Smart::Comments;
+
+{
+  use warnings 'layer';
+  require File::Map;
+  print "File::Map version ", File::Map->VERSION, "\n";
+
+  my $use_mmap = 'if_possible';
+
+  my $filename = File::Locate::Iterator->default_database_file;
+
+  my $mode = '<:encoding(iso-8859-1)';
+#   $mode = '<:utf8';
+#   $mode = '<:raw';
+#   $mode = '<:mmap';
+  open my $fh, $mode, $filename
+    or die;
+
+  { local $,=' '; print "layers ", PerlIO::get_layers($fh), "\n"; }
+
+  my $it = File::Locate::Iterator->new (database_fh => $fh,
+                                        use_mmap => $use_mmap,
+                                       );
+  ### keys: keys %$it
+  print exists $it->{'fm'} ? "using mmap\n" : "using fh\n";
+
+  exit 0;
+}
+
+
+{
+  my $it = File::Locate::Iterator->new
+            (database_str => "\0LOCATE02\0\0/hello\0\006/world\0");
+  print $it->next,"\n";
+  print $it->next,"\n";
+  print $it->next,"\n";
+  exit 0;
+}
 
 {
   require Config;
@@ -276,29 +315,6 @@ C<$posstr> position.
 
 
 
-{
-  my $use_mmap = 'if_possible';
-
-  my $filename = File::Locate::Iterator->default_database_file;
-
-  my $mode = '<:encoding(iso-8859-1)';
-  $mode = '<:utf8';
-  $mode = '<:raw';
-  $mode = '<:mmap';
-  open my $fh, $mode, $filename
-    or die;
-
-  { local $,=' '; print "layers ", PerlIO::get_layers($fh), "\n"; }
-
-  my $it = File::Locate::Iterator->new (database_fh => $fh,
-                                        use_mmap => $use_mmap,
-                                       );
-  print exists $it->{'mmap'} ? "using mmap\n" : "using fh\n";
-
-  exit 0;
-}
-
-
 
 {
   require File::FnMatch;
@@ -334,14 +350,14 @@ HERE
                                         use_mmap => $use_mmap,
                                        );
   print $it->{'regexp'},"\n";
-  print exists $it->{'mmap'} ? "using mmap\n" : "using fh\n";
+  print exists $it->{'fm'} ? "using mmap\n" : "using fh\n";
 
   # require Perl6::Slurp;
   # Perl6::Slurp::slurp ($options{'database_file'}),
 
   # use Perl6::Slurp 'slurp';
   # my $str = slurp '/tmp/frcode.out';
-  # $it->{'mmap'} = $str;
+  # $it->{'mref'} = \$str;
 
   while (defined (my $str = $it->next)) {
     print "got '$str'\n";

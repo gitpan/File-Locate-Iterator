@@ -24,7 +24,7 @@ use MooseX::Iterator::Meta::Iterable;
 extends 'File::Locate::Iterator';
 with 'MooseX::Iterator::Role';
 
-our $VERSION = 15;
+our $VERSION = 16;
 
 # uncomment this to run the ### lines
 #use Smart::Comments;

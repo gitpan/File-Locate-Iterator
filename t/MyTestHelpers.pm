@@ -39,28 +39,25 @@ sub DEBUG { 0 }
 
 {
   my $warning_count;
-  my $want_stacktrace;
+  my $stacktraces;
+  my $stacktraces_count = 0;
   sub nowarnings_handler {
     $warning_count++;
-    if ($want_stacktrace && eval { require Devel::StackTrace }) {
-      unshift @_, Devel::StackTrace->new->as_string;
+    if ($stacktraces_count < 3 && eval { require Devel::StackTrace }) {
+      $stacktraces_count++;
+      $stacktraces .= "\n" . Devel::StackTrace->new->as_string() . "\n";
     }
     warn @_;
   }
   sub nowarnings {
-    ($want_stacktrace) = @_;
     $SIG{'__WARN__'} = \&nowarnings_handler;
   }
   END {
     if ($warning_count) {
-      require Carp;
-
-      my $save_stacktrace = $want_stacktrace;
-      $want_stacktrace = 0;
-      Carp::carp ("Saw $warning_count warning(s)");
-      my $want_stacktrace = $save_stacktrace;
-
-      Test::More::diag('Exit code 1 for warnings');
+      require Test::More;
+      Test::More::diag("Saw $warning_count warning(s):");
+      Test::More::diag($stacktraces);
+      Test::More::diag("Exit code 1 for warnings");
       $? = 1;
     }
   }
@@ -177,16 +174,22 @@ sub wait_for_event {
     ($signame => sub {
        if (DEBUG) { Test::More::diag ("wait_for_event()   $signame received"); }
        $done = 1;
-       return 0; # Gtk2::EVENT_PROPAGATE
+       return 0; # Gtk2::EVENT_PROPAGATE (new in Gtk2 1.220)
      });
   my $timer_id = Glib::Timeout->add
     (30_000, # 30 seconds
      sub {
        $done = 1;
        Test::More::diag ("wait_for_event() oops, timeout waiting for $signame on $widget");
-       return 1; # Glib::SOURCE_CONTINUE
+       return 1; # Glib::SOURCE_CONTINUE (new in Glib 1.220)
      });
-  $widget->get_display->sync;
+  if ($widget->can('get_display')) {
+    # GdkDisplay new in Gtk 2.2
+    $widget->get_display->sync;
+  } else {
+    # in Gtk 2.0 gdk_flush() is a sync actually
+    Gtk2::Gdk->flush;
+  }
 
   my $count = 0;
   while (! $done) {

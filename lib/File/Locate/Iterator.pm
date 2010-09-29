@@ -23,7 +23,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = 15;
+our $VERSION = 16;
 
 use DynaLoader;
 our @ISA = ('DynaLoader');
@@ -322,6 +322,11 @@ C<File::Locate::Iterator> reads a "locate" database file in iterator style.
 Each C<next()> call on the iterator returns the next entry from the
 database.
 
+    /
+    /bin
+    /bin/bash
+    /bin/cat
+
 Locate databases normally hold filenames as a way of finding files faster
 than churning through directories on the filesystem.  Optional glob, suffix
 and regexp options on the iterator can restrict the entries returned.
@@ -332,8 +337,8 @@ C<locate>, not the previous "slocate" format.
 Iterators from this module are stand-alone, they don't need any of the
 various iterator frameworks.  See L<Iterator::Locate>,
 L<Iterator::Simple::Locate> and L<MooseX::Iterator::Locate> to inter-operate
-with those frameworks, to use their style or convenient ways to grep, map or
-manipulate iterated sequences.
+with those frameworks, in their style or with ways to grep, map and
+otherwise manipulate the iteration.
 
 =head1 FUNCTIONS
 
@@ -359,11 +364,14 @@ C<default_database_file> below.
             (database_file => '/foo/bar.db');
 
 A filehandle is read with the usual C<PerlIO>, so it can use layers and come
-from various sources but should be in binary mode.
+from various sources, but it should be in binary mode.
 
 =item C<database_str> (string)
 
 The database contents to read in the form of a byte string.
+
+    $it = File::Locate::Iterator->new
+      (database_str => "\0LOCATE02\0\0/hello\0\006/world\0");
 
 =item C<suffix> (string)
 
@@ -387,15 +395,15 @@ given glob(s) or regexp(s).  For example,
 If multiple patterns or suffixes are given then matches of any are returned.
 
 Globs are in the style of the C<locate> program which means C<fnmatch> with
-no options (see L<File::FnMatch>) and the pattern matching the full entry
-except a string with no wildcard "*", "?" or "[" can match anywhere.
+no options (see L<File::FnMatch>) and the pattern matching the full entry if
+there's wildcards ("*", "?" or "[") or any part if a fixed string.
 
     glob => '*.c'  # .c files, no .cxx files
     glob => '.c'   # fixed str, .cxx matches
 
 Globs should be byte strings (not wide chars) since that's how the database
-entries are handled and also suspect C<fnmatch> has no notion of charset
-coding in the strings or patterns.
+entries are handled, and suspect C<fnmatch> has no notion of charset coding
+its strings and patterns.
 
 =item C<use_mmap> (string, default "if_sensible")
 
@@ -416,8 +424,7 @@ The options are
 Setting C<default>, C<undef> or omitted means C<if_sensible>.
 C<if_sensible> uses mmap if available, and the file size is reasonable, and
 for C<database_fh> if it isn't already using an C<:mmap> layer.
-C<if_possible> skips those checks and just uses mmap whenever it can be
-done.
+C<if_possible> uses mmap whenever it can be done.
 
     $it = File::Locate::Iterator->new
             (use_mmap => 'if_possible');
@@ -425,11 +432,19 @@ done.
 When multiple iterators access the same file they share the mmap.  The size
 check for C<if_sensible> counts space in all C<File::Locate::Iterator>
 mappings and won't go beyond 1/5 of available data space, which is assumed
-to be a quarter of the wordsize, so on a 32-bit system total at most 200Mb.
-C<if_possible> and C<if_sensible> restrict themselves to ordinary files
+to be a quarter of the wordsize, so for a 32-bit system a total at most
+200Mb.  C<if_possible> and C<if_sensible> will only act on ordinary files
 because generally the file size on char specials is not reliable.
 
 =back
+
+=item C<< $filename = File::Locate::Iterator->default_database_file >>
+
+Return the default database file used for C<new> above.  This is meant to be
+the same as the C<locate> program uses and currently means
+C<$ENV{'LOCATE_PATH'}> if set, otherwise F</var/cache/locate/locatedb>.  In
+the future it might be possible to check how C<findutils> has been
+installed.
 
 =back
 
@@ -439,9 +454,9 @@ because generally the file size on char specials is not reliable.
 
 =item C<< $entry = $it->next >>
 
-Return the next entry from the database, or no values at end of file.  An
-empty return means C<undef> in scalar context or no values in array context
-so you can loop with either
+Return the next entry from the database, or no values at end of file.  No
+values means C<undef> in scalar context or an empty list in array context so
+you can loop with either
 
     while (defined (my $filename = $it->next)) ...
 
@@ -457,16 +472,9 @@ The return is a byte string since it's normally a filename and as of Perl
 Rewind C<$it> back to the start of the database.  The next C<$it-E<gt>next>
 call will return the first entry.
 
-This is only possible when the underlying database file or handle is a plain
-file or something else seekable, perhaps with seekable PerlIO layers.
-
-=item C<< $filename = File::Locate::Iterator->default_database_file >>
-
-Return the default database file used for C<new> above.  This is meant to be
-the same as the C<locate> program uses and currently means
-C<$ENV{'LOCATE_PATH'}> if set, otherwise F</var/cache/locate/locatedb>.  In
-the future it might be possible to check how C<findutils> has been
-installed.
+This is only possible when C<seek> works on the underlying database file or
+handle, meaning a plain file or something else seekable, including seekable
+PerlIO layers.
 
 =back
 
@@ -479,23 +487,23 @@ C<ionice> if doing a lot of mmapped work.
 
 If an iterator using a file handle is cloned by a C<fork> or new thread then
 generally it can be used by the parent or the child, but not both.  If the
-handle is anything with a file descriptor then the underlying file position
-is shared by parent and child, so when one of them reads a block it upsets
-the position seen by the other.  This problem affects almost all code
-working with file handles across C<fork> or threads.  Some C<CLONE> code
-might let threads work correctly, though more slowly, but a C<fork> is
-probably doomed.
+handle is anything with a file descriptor then the descriptor file position
+is shared by parent and child, so when one of them reads it upsets the
+position seen by the other.  This problem affects almost all code working
+with file handles across C<fork> or threads.  Some C<CLONE> code might let
+threads work correctly (though more slowly), but a C<fork> is probably
+doomed.
 
-Iterators using C<mmap> work correctly for both forks and threads, although
+Iterators using C<mmap> work correctly for both forks and threads, except
 the mmap C<if_sensible> size calculation and sharing is not thread-aware
-beyond those mmaps existing when the thread is forked off.  Perhaps this
-will improve in the future.
+beyond the mmaps existing when the thread is spawned.  Perhaps this will
+improve in the future.
 
-A locate database is only designed to be read forwards, hence no C<prev>
-method on the iterator.  It's not possible to read backwards generally,
-since the start of a record can't be distinguished by its content, and the
-"front coding" means it might need data from other records an arbitrary
-distance yet further back.
+The locate database format is only designed to be read forwards, hence no
+C<prev> method on the iterator.  It's not possible to read backwards
+generally, since the start of a record can't be distinguished by its
+content, and the "front coding" means it may need data from various other
+records an arbitrary distance yet further back.
 
 =head1 ENVIRONMENT VARIABLES
 
@@ -533,13 +541,13 @@ the main loop.  Note that C<next()> blocks on reading from the database, so
 the database generally should be a plain file rather than a socket or
 something, so as not to hold up a main loop.
 
-If you have the recommended mmap (C<File::Map> module) then iterators share
-an C<mmap> of the database file.  Otherwise currently each holds a separate
-open handle to the database, which means a file descriptor and PerlIO
+If you have the recommended mmap C<File::Map> module then iterators share an
+C<mmap> of the database file.  Otherwise currently each holds a separate
+open handle to the database which means a file descriptor and PerlIO
 buffering per iterator.  Sharing a handle and making each one seek to its
 desired position would be possible, but a seek drops buffered data and so
 would go slower.  Some PerlIO trickery might transparently share an fd and
-hold buffered blocks from multiple file positions.
+keep buffered blocks from multiple file positions.
 
 =head1 SEE ALSO
 

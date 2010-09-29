@@ -29,7 +29,7 @@ BEGIN { MyTestHelpers::nowarnings() }
 use File::Locate::Iterator;
 
 {
-  my $want_version = 15;
+  my $want_version = 16;
   is ($File::Locate::Iterator::VERSION, $want_version, 'VERSION variable');
   is (File::Locate::Iterator->VERSION,  $want_version, 'VERSION class method');
 
@@ -65,7 +65,7 @@ my $samp_zeros    = File::Spec->catfile ($FindBin::Bin, 'samp.zeros');
 my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
 my $samp_locatedb_offset = File::Spec->catfile ($FindBin::Bin,
                                                 'samp.locatedb.offset');
-diag "Test samp_zeros=$samp_zeros, samp_locatedb=$samp_locatedb";
+diag "File samp_zeros=$samp_zeros, samp_locatedb=$samp_locatedb";
 
 
 my @samp_zeros;

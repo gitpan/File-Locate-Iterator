@@ -17,6 +17,10 @@
 # You should have received a copy of the GNU General Public License along
 # with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
+
+# Exercise reading from a PerlIO::via::Base64, if that module available.
+
+
 use 5.006;
 use strict;
 use warnings;
@@ -33,7 +37,7 @@ require File::Spec;
 my $samp_zeros = File::Spec->catfile ($FindBin::Bin, 'samp.zeros');
 my $samp_locatedb_base64
   = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb.base64');
-diag "Test samp_locatedb_base64=$samp_locatedb_base64";
+diag "File samp_locatedb_base64=$samp_locatedb_base64";
 
 # if PerlIO not available then this can fail, or at least when mangling it
 # with Test::Without::Module
