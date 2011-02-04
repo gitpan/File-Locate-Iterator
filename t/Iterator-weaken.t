@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2010 Kevin Ryde
+# Copyright 2010, 2011 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -61,8 +61,8 @@ require Iterator::Locate;
        tracked_types => [ 'GLOB', 'IO' ],
      });
   is ($leaks, undef, 'deep garbage collection');
-  if ($leaks && defined &explain) {
-    diag "Test-Weaken ", explain $leaks;
+  if ($leaks) {
+    eval { diag "Test-Weaken ", explain($leaks) }; # explain in Test::More 0.82
   }
 }
 
@@ -80,8 +80,8 @@ require Iterator::Locate;
        tracked_types => [ 'GLOB', 'IO' ],
      });
   is ($leaks, undef, 'deep garbage collection');
-  if ($leaks && defined &explain) {
-    diag "Test-Weaken ", explain $leaks;
+  if ($leaks) {
+    eval { diag "Test-Weaken ", explain($leaks) }; # explain in Test::More 0.82
   }
 }
 
@@ -100,8 +100,8 @@ require Iterator::Locate;
        tracked_types => [ 'GLOB', 'IO' ],
      });
   is ($leaks, undef, 'deep garbage collection');
-  if ($leaks && defined &explain) {
-    diag "Test-Weaken ", explain $leaks;
+  if ($leaks) {
+    eval { diag "Test-Weaken ", explain($leaks) }; # explain in Test::More 0.82
   }
 }
 

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2010 Kevin Ryde
+# Copyright 2010, 2011 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -19,7 +19,7 @@
 
 
 # This is a poor man's version of the "locate" program, as an example of
-# using iterators.  The head() and igrep() of Iterator::Simple are good ways
+# using iterators.  The head() and igrep() of Iterator::Simple are handy ways
 # to implement the --limit and --existing options.
 #
 
@@ -30,7 +30,10 @@ use Getopt::Long;
 use Iterator::Simple 'igrep';
 use Iterator::Simple::Locate;
 
-our $VERSION = 16;
+our $VERSION = 17;
+
+use FindBin;
+my $progname = $FindBin::Script;
 
 my @globs;
 my $show_usage = 1;
@@ -42,6 +45,7 @@ my $option_non_existing = 0;
 my $option_limit;
 my $use_mmap;
 
+Getopt::Long::Configure ('bundling', 'no_ignore_case');
 GetOptions('0|null'         => sub { $output_terminator = "\0" },
            'c|count'        => \$option_count,
            'd|database=s'   => \$database_file,
@@ -56,12 +60,12 @@ GetOptions('0|null'         => sub { $output_terminator = "\0" },
              push @globs, "$_[0]";
            },
            'version'        => sub {
-             print "locate.pl version $VERSION\n";
+             print "$progname version $VERSION\n";
              $show_usage = 0;
            },
            'help|?' => sub {
-             print <<'HERE';
-locate.pl [--options] pattern...
+             print <<"HERE";
+$progname [--options] pattern...
   -0, --null          print \0 after each filename
   -c, --count         print just a count of matches
   -d, --database FILENAME
@@ -80,7 +84,7 @@ HERE
 if (! @globs) {
   # no glob patterns given
   if ($show_usage) {
-    print STDERR "usage: locate.pl [--options] pattern...\n";
+    print STDERR "usage: $progname [--options] pattern...\n";
     exit 1;
   } else {
     exit 0;

@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Kevin Ryde.
+# Copyright 2009, 2010, 2011 Kevin Ryde.
 #
 # This file is part of File-Locate-Iterator.
 #
@@ -21,12 +21,11 @@ use 5.006;
 use strict;
 use warnings;
 use Carp;
-use Scalar::Util;
 
 # uncomment this to run the ### lines
 #use Smart::Comments;
 
-our $VERSION = 16;
+our $VERSION = 17;
 
 our %cache;
 
@@ -48,7 +47,13 @@ sub get {
   ### cache get: "$fh, $key, size=".(-s $fh)
   return ($cache{$key} || do {
     require File::Map;
-    File::Map->VERSION('0.24'); # for no prototypes
+    File::Map->VERSION('0.35'); # for binary handled properly, maybe
+    require PerlIO::Layers;
+    require Scalar::Util;
+
+    PerlIO::Layers::query_handle ($fh, 'mappable')
+        or croak "Handle not mappable";
+
     my $self = bless { key  => $key,
                        mmap => undef,
                      }, $class;
@@ -162,7 +167,7 @@ http://user42.tuxfamily.org/file-locate-iterator/index.html
 
 =head1 COPYRIGHT
 
-Copyright 2009, 2010 Kevin Ryde
+Copyright 2009, 2010, 2011 Kevin Ryde
 
 File-Locate-Iterator is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published by

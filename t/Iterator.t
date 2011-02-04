@@ -33,7 +33,7 @@ plan tests => 8;
 require Iterator::Locate;
 
 {
-  my $want_version = 16;
+  my $want_version = 17;
   is ($Iterator::Locate::VERSION, $want_version, 'VERSION variable');
   is (Iterator::Locate->VERSION,  $want_version, 'VERSION class method');
 

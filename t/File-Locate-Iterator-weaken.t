@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2009, 2010 Kevin Ryde
+# Copyright 2009, 2010, 2011 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -56,15 +56,15 @@ foreach my $iterate_count (0, 1, 10) {
            foreach (1 .. $iterate_count) {
              push @ret, \($it->next);
            }
-           return @ret;
+           return [ \@ret, $it ];
          },
          contents => \&Test::Weaken::ExtraBits::contents_glob_IO,
          tracked_types => [ 'GLOB', 'IO' ],
        });
     is ($leaks, undef,
         "deep garbage collection, with database_file, iterate_count=$iterate_count");
-    if ($leaks && defined &explain) {
-      diag "Test-Weaken ", explain $leaks;
+    if ($leaks) {
+      eval { diag "Test-Weaken ", explain($leaks) }; # explain in Test::More 0.82
     }
   }
 
@@ -80,15 +80,15 @@ foreach my $iterate_count (0, 1, 10) {
            foreach (1 .. $iterate_count) {
              push @ret, \($it->next);
            }
-           return @ret;
+           return [ \@ret, $it, $fh ];
          },
          contents => \&Test::Weaken::ExtraBits::contents_glob_IO,
          tracked_types => [ 'GLOB', 'IO' ],
        });
     is ($leaks, undef,
         "deep garbage collection, with database_fh, iterate_count=$iterate_count");
-    if ($leaks && defined &explain) {
-      diag "Test-Weaken ", explain $leaks;
+    if ($leaks) {
+      eval { diag "Test-Weaken ", explain($leaks) }; # explain in Test::More 0.82
     }
   }
 
@@ -105,15 +105,15 @@ foreach my $iterate_count (0, 1, 10) {
            foreach (1 .. $iterate_count) {
              push @ret, \($it->next);
            }
-           return @ret;
+           return [ \@ret, $it, $fh ];
          },
          contents => \&Test::Weaken::ExtraBits::contents_glob_IO,
          tracked_types => [ 'GLOB', 'IO' ],
        });
     is ($leaks, undef,
         "deep garbage collection, with database_fh, no mmap, iterate_count=$iterate_count");
-    if ($leaks && defined &explain) {
-      diag "Test-Weaken ", explain $leaks;
+    if ($leaks) {
+      eval { diag "Test-Weaken ", explain($leaks) }; # explain in Test::More 0.82
     }
   }
 }

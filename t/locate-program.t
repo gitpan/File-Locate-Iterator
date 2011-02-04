@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2009, 2010 Kevin Ryde
+# Copyright 2009, 2010, 2011 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -78,8 +78,12 @@ foreach my $use_mmap (0, 'if_possible') {
           last;
         }
       }
-      ok ($good, "iterator vs locate program, use_mmap=$use_mmap");
     }
+    # no error check on this close, since "locate" will exit non-zero due to
+    # broken output pipe closing it before its output is finished
+    close $fh;
+
+    ok ($good, "iterator vs locate program, use_mmap=$use_mmap");
   }
 }
 

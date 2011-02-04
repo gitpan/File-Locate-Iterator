@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2010 Kevin Ryde.
+# Copyright 2010, 2011 Kevin Ryde.
 #
 # This file is part of File-Locate-Iterator.
 #
@@ -27,24 +27,30 @@ use 5.004; # sysseek()
 use strict;
 use warnings;
 
-open my $fh, '<', '/etc/motd' or die;
+# uncomment this to run the ### lines
+use Smart::Comments;
+
+
+# separate buffer, common underlying filepos
+
+open my $fh, '<', '/usr/share/common-licenses/GPL-2' or die;
 open my $fh2, '<&', $fh or die;
+### $fh
+### $fh2
 
 my $l = readline($fh);
-print tell($fh),' ',sysseek($fh,0,1),"\n";
-print tell($fh2),' ',sysseek($fh2,0,1),"\n";
+print "tell=",tell($fh),' sysseek=',sysseek($fh,0,1),"\n";
+print "tell=",tell($fh2),' sysseek=',sysseek($fh2,0,1),"\n";
 
 my $l2 = readline($fh2);
-print tell($fh),' ',sysseek($fh,0,1),"\n";
-print tell($fh2),' ',sysseek($fh2,0,1),"\n";
-
+print "tell=",tell($fh),' sysseek=',sysseek($fh,0,1),"\n";
+print "tell=",tell($fh2),' sysseek=',sysseek($fh2,0,1),"\n";
 
 # print tell(fileno($fh)),"\n";
 # print tell(fileno($fh2)),"\n";
-# my $l2 = readline($fh2);
-print "l1 ",$l;
-print "l2 ",$l2;
 
+### $l
+### $l2
 
 
 #           {

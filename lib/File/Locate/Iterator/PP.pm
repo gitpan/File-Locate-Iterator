@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Kevin Ryde.
+# Copyright 2009, 2010, 2011 Kevin Ryde.
 #
 # This file is part of File-Locate-Iterator.
 #
@@ -44,6 +44,7 @@ sub _BAD_SHARE {
 }
 sub next {
   my ($self) = @_;
+  ### FLI PP next()
 
   my $sharelen = $self->{'sharelen'};
   my $entry = $self->{'entry'};

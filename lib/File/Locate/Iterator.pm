@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Kevin Ryde.
+# Copyright 2009, 2010, 2011 Kevin Ryde.
 #
 # This file is part of File-Locate-Iterator.
 #
@@ -23,7 +23,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = 16;
+our $VERSION = 17;
 
 use DynaLoader;
 our @ISA = ('DynaLoader');
@@ -125,13 +125,22 @@ sub default_database_file {
 #
 sub new {
   my ($class, %options) = @_;
+  ### FLI new(): %options
 
-  my @regexps = (defined $options{'regexp'} ? ($options{'regexp'}) : (),
-                 @{$options{'regexps'} || []});
+  # delete 'regexp' field if it's undef, as the XS code wants no 'regexp'
+  # field for no regexps, not a field set to undef
+  my @regexps;
+  if (defined (my $regexp = delete $options{'regexp'})) {
+    push @regexps, $regexp;
+  }
+  if (my $regexps = delete $options{'regexps'}) {
+    push @regexps, @$regexps;
+  }
   foreach my $suffix (defined $options{'suffix'} ? $options{'suffix'} : (),
                       @{$options{'suffixes'}}) {
     push @regexps, quotemeta($suffix) . '$';
   }
+  ### @regexps
 
   # as per findutils locate.c locate() function, pattern with * ? or [ is a
   # glob, anything else is a literal match
@@ -141,6 +150,7 @@ sub new {
   @globs = grep { ($_ =~ /[[*?]/
                    || do { push @regexps, quotemeta($_); 0 })
                 } @globs;
+  ### @globs
 
   my $self = bless { entry    => '',
                      sharelen => 0,
@@ -155,7 +165,7 @@ sub new {
   }
 
   ### regexp: $self->{'regexp'}
-  ### globs : defined $self->{'globs'}
+  ### globs : $self->{'globs'}
 
   if (defined (my $str = $options{'database_str'})) {
     $self->{'mref'} = \$str;
@@ -302,7 +312,7 @@ sub _current {
 1;
 __END__
 
-=for stopwords filename filenames filesystem slocate filehandle arrayref mmap mmaps seekable PerlIO mmapped XSUB coroutining fd Findutils Ryde wildcard charset wordsize
+=for stopwords filename filenames filesystem slocate filehandle arrayref mmap mmaps seekable PerlIO mmapped XSUB coroutining fd Findutils Ryde wildcard charset wordsize wildcards
 
 =head1 NAME
 
@@ -563,7 +573,7 @@ http://user42.tuxfamily.org/file-locate-iterator/index.html
 
 =head1 COPYRIGHT
 
-Copyright 2009, 2010 Kevin Ryde
+Copyright 2009, 2010, 2011 Kevin Ryde
 
 File-Locate-Iterator is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published by

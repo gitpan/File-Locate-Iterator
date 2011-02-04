@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2009, 2010 Kevin Ryde
+# Copyright 2009, 2010, 2011 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -20,7 +20,7 @@
 use 5.006;
 use strict;
 use warnings;
-use Test::More tests => 106;
+use Test::More tests => 107;
 
 use lib 't';
 use MyTestHelpers;
@@ -29,7 +29,7 @@ BEGIN { MyTestHelpers::nowarnings() }
 use File::Locate::Iterator;
 
 {
-  my $want_version = 16;
+  my $want_version = 17;
   is ($File::Locate::Iterator::VERSION, $want_version, 'VERSION variable');
   is (File::Locate::Iterator->VERSION,  $want_version, 'VERSION class method');
 
@@ -200,6 +200,21 @@ if ($] >= 5.008) {
       $noinfloop->();
     }
     is_deeply (\@got, \@want, 'samp.locatedb regexp and glob');
+  }
+
+  # with 'regexp' undef
+  {
+    my $regexp = qr{^/usr/tmp};
+    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
+                                          regexp => undef);
+    my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
+    my @want = @samp_zeros;
+    my @got;
+    while (defined (my $filename = $it->next)) {
+      push @got, $filename;
+      $noinfloop->();
+    }
+    is_deeply (\@got, \@want, 'samp.locatedb regexp /usr/tmp');
   }
 
   {

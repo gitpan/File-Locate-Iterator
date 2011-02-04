@@ -1,4 +1,4 @@
-# Copyright 2008, 2009, 2010 Kevin Ryde
+# Copyright 2008, 2009, 2010, 2011 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -37,7 +37,7 @@ Bugs: mailto:user42@zip.com.au
 Package: libfile-locate-iterator-perl
 Architecture: any
 Depends: perl (>= 5.6), libconstant-defer-perl, ${perl:Depends}, ${misc:Depends}, ${shlibs:Depends}
-Recommends: libfile-map-perl (>= 0.20)
+Recommends: libfile-map-perl (>= 0.35)
 Suggests: libiterator-perl, libiterator-simple-perl
 Description: Read a "locate" database file with an iterator
  File::Locate::Iterator reads a "locate" database file, similar to

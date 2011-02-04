@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2010 Kevin Ryde
+# Copyright 2010, 2011 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -18,7 +18,7 @@
 # with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# Using the MooseX::Iterator module.
+# Using the MooseX::Iterator::Locate module.
 
 use strict;
 use warnings;

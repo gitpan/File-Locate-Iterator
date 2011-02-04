@@ -39,9 +39,9 @@ devel/Shared.pm
 devel/speed.pl
 devel/stat.pl
 devel/wait-status.pl
+examples/iterator-pm.pl
 examples/iterator-simple.pl
-examples/iterator.pl
-examples/locate.pl
+examples/mini-locate.pl
 examples/moosex-iterator.pl
 examples/native.pl
 inc/my_pod2html
@@ -69,6 +69,7 @@ t/Iterator-Simple.t
 t/Iterator-weaken.t
 t/Iterator.t
 t/locate-program.t
+t/MooseX-Iterator-Locate-subclass.t
 t/MooseX-Iterator-Locate-weaken.t
 t/MooseX-Iterator-Locate.t
 t/MyTestHelpers.pm

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2009, 2010 Kevin Ryde
+# Copyright 2009, 2010, 2011 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -25,23 +25,26 @@ use lib 'inc';
 use MyMakeMakerExtras;
 
 
+# Crib: only print to STDERR so as not to upset "Makefile.PL PREREQ_PRINT=1"
+#
+
 my $want_xs = 1;
 @ARGV = grep { /^MY_WITHOUT_XS/
-               ? do { $want_xs = 0; 0 }  # record and remove
-                 : 1 } @ARGV;
+                 ? do { $want_xs = 0; 0 }  # record and remove
+                   : 1 } @ARGV;
 if (! $want_xs) {
-  print "XS skipped by request\n";
+  print STDERR "XS skipped by request\n";
 }
 #
 # SvRX() is new in perl 5.10.0 and ppport.h 3.19 doesn't offer an
 # implementation for earlier perl
 #
 if ($want_xs && $] < 5.010) {
-  print "XS skipped for perl $[ (believe need 5.010 for SvRX)\n";
+  print STDERR "XS skipped for perl $[ (believe need 5.010 for SvRX)\n";
   $want_xs = 0
 }
 if ($want_xs) {
-  print "XS used by default.  If you don't have a compiler or the .xs
+  print STDERR "XS used by default.  If you don't have a compiler or the .xs
 doesn't work then disable with
     perl Makefile.PL MY_WITHOUT_XS=1
 "
@@ -67,54 +70,54 @@ MyMakeMakerExtras::WriteMakefile
    XS => ($want_xs ? { 'Iterator.xs' => 'Iterator.c' } : {}),
    C  => ($want_xs ? [ 'Iterator.c' ] : []),
 
-   META_MERGE
-   => { resources
-        => { homepage
-             => 'http://user42.tuxfamily.org/file-locate-iterator/index.html',
-           },
-        recommends
-        => { 'File::Map' => 0.24, # version 0.24 for no prototypes
-             'Scalar::Util' => 0, # for FileMap bits
-           },
-        optional_features
-        => { maximum_examples
-             => { description => 'Be able to run all the examples programs.',
-                  requires => { 'Iterator' => 0,
-                                'Iterator::Simple' => 0,
-                                'MooseX::Iterator' => 0,
-                              },
-                },
-             maximum_interoperation
-             => { description => 'Have maximum inter-operation with other modules (optional supported other stuff).',
-                  requires => { 'File::Map' => '0.24', # version 0.24 for no prototypes
-                                'Scalar::Util' => 0, # for FileMap bits
-                                'Iterator' => 0,
-                                'Iterator::Simple' => 0,
-                                'MooseX::Iterator' => 0,
-                              },
-                },
-             maximum_tests
-             => { description => 'Have "make test" do as much as possible.',
-                  requires => { 'Test::Synopsis' => 0,
-                                # version 3.002 for "tracked_types"
-                                'Test::Weaken' => '3.002',
-                              },
-                },
-             maximum_devel
-             => { description => 'Stuff used variously for development.',
-                  requires => { 'Devel::TimeThis' => 0,
-                                'File::Locate' => 0,
-                                'IO::String' => 0,
-                                'Perl6::Slurp' => 0,
-                                'Scalar::Util' => 0,
-                                'Text::Glob' => 0,
-                                'File::Map' => '0.24',
-                                'PerlIO' => 0,
-                                'Sys::Mmap' => 0,
-                              },
-                },
-           },
-      },
+   META_MERGE =>
+   { resources =>
+     { homepage =>
+       'http://user42.tuxfamily.org/file-locate-iterator/index.html',
+     },
+     recommends =>
+     { 'File::Map' => 0.35, # 0.24 no prototypes, 0.35 binary stuff
+       'Scalar::Util' => 0, # for FileMap bits
+     },
+     optional_features =>
+     { maximum_examples =>
+       { description => 'Be able to run all the examples programs.',
+         requires => { 'Iterator' => 0,
+                       'Iterator::Simple' => 0,
+                       'MooseX::Iterator' => 0,
+                     },
+       },
+       maximum_interoperation =>
+       { description => 'Have maximum inter-operation with other modules (optional supported other stuff).',
+         requires => { 'File::Map' => '0.24', # version 0.24 for no prototypes
+                       'Scalar::Util' => 0, # for FileMap bits
+                       'Iterator' => 0,
+                       'Iterator::Simple' => 0,
+                       'MooseX::Iterator' => 0,
+                     },
+       },
+       maximum_tests =>
+       { description => 'Have "make test" do as much as possible.',
+         requires => { 'Test::Synopsis' => 0,
+                       # version 3.002 for "tracked_types"
+                       'Test::Weaken' => '3.002',
+                     },
+       },
+       maximum_devel =>
+       { description => 'Stuff used variously for development.',
+         requires => { 'Devel::TimeThis' => 0,
+                       'File::Locate' => 0,
+                       'IO::String' => 0,
+                       'Perl6::Slurp' => 0,
+                       'Scalar::Util' => 0,
+                       'Text::Glob' => 0,
+                       'File::Map' => '0.24',
+                       'PerlIO' => 0,
+                       'Sys::Mmap' => 0,
+                     },
+       },
+     },
+   },
   );
 
 #------------------------------------------------------------------------------

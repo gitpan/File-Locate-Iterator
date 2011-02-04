@@ -64,8 +64,8 @@ require MooseX::Iterator::Locate;
        tracked_types => [ 'GLOB', 'IO' ],
      });
   is ($leaks, undef, 'deep garbage collection, database_file');
-  if ($leaks && defined &explain) {
-    diag "Test-Weaken ", explain $leaks;
+  if ($leaks) {
+    eval { diag "Test-Weaken ", explain($leaks) }; # explain in Test::More 0.82
   }
 }
 
@@ -83,8 +83,8 @@ require MooseX::Iterator::Locate;
        tracked_types => [ 'GLOB', 'IO' ],
      });
   is ($leaks, undef, 'deep garbage collection, fh, with mmap');
-  if ($leaks && defined &explain) {
-    diag "Test-Weaken ", explain $leaks;
+  if ($leaks) {
+    eval { diag "Test-Weaken ", explain($leaks) }; # explain in Test::More 0.82
   }
 }
 
@@ -103,8 +103,8 @@ require MooseX::Iterator::Locate;
        tracked_types => [ 'GLOB', 'IO' ],
      });
   is ($leaks, undef, 'deep garbage collection, fh, no mmap');
-  if ($leaks && defined &explain) {
-    diag "Test-Weaken ", explain $leaks;
+  if ($leaks) {
+    eval { diag "Test-Weaken ", explain($leaks) }; # explain in Test::More 0.82
   }
 }
 

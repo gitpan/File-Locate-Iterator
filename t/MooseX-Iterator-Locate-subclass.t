@@ -31,25 +31,20 @@ use lib 't';
 use MyTestHelpers;
 BEGIN { MyTestHelpers::nowarnings() }
 
-plan tests => 172;
-require MooseX::Iterator::Locate;
+BEGIN { plan tests => 161; }
 
+my $reset_called;
+{
+  package TestLocate;
+  use Moose;
 
-#-----------------------------------------------------------------------------
-# VERSION
+  extends 'MooseX::Iterator::Locate';
+  has 'mynewattr' => (is => 'rw', isa => 'Int');
 
-my $want_version = 17;
-is ($MooseX::Iterator::Locate::VERSION, $want_version, 'VERSION variable');
-is (MooseX::Iterator::Locate->VERSION,  $want_version, 'VERSION class method');
-{ ok (eval { MooseX::Iterator::Locate->VERSION($want_version); 1 },
-      "VERSION class check $want_version");
-  my $check_version = $want_version + 1000;
-  ok (! eval { MooseX::Iterator::Locate->VERSION($check_version); 1 },
-      "VERSION class check $check_version");
+  after 'reset' => sub {
+    $reset_called = 1;
+  };
 }
-# MooseX::Iterator::Locate->new object isn't an actual subclass, just a
-# flavour of Iterator::Simple, so no object version number test
-
 
 #-----------------------------------------------------------------------------
 # samp.zeros / samp.locatedb
@@ -74,7 +69,7 @@ my $samp_zeros    = File::Spec->catfile ($FindBin::Bin, 'samp.zeros');
 my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
 
 {
-  my $it = MooseX::Iterator::Locate->new (database_file => $samp_locatedb);
+  my $it = TestLocate->new (database_file => $samp_locatedb);
   my @want = slurp_zeros ($samp_zeros);
   {
     my @got;
@@ -83,7 +78,9 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
     }
     is_deeply (\@got, \@want, 'samp.locatedb');
   }
+  $reset_called = 0;
   $it->reset;
+  is ($reset_called, 1, "after 'reset' hook");
   {
     my @got;
     while (defined (my $filename = $it->next)) {
@@ -94,7 +91,7 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
 }
 
 {
-  my $it = MooseX::Iterator::Locate->new (database_file => $samp_locatedb);
+  my $it = TestLocate->new (database_file => $samp_locatedb);
   my @want = slurp_zeros ($samp_zeros);
 
   is ($it->peek, $want[0], 'peek');
@@ -116,7 +113,7 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
 # inheritance
 
 {
-  my $it = MooseX::Iterator::Locate->new (database_file => $samp_locatedb);
+  my $it = TestLocate->new (database_file => $samp_locatedb);
   ok (! $it->does('nosuchrolename'), 'does() not nosuchrolename');
   ok ($it->does('MooseX::Iterator::Role'), 'does() MooseX::Iterator::Role');
 }
@@ -125,7 +122,7 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
 # attributes
 
 {
-  my $meta = MooseX::Iterator::Locate->meta;
+  my $meta = TestLocate->meta;
   my @want_names = (qw(database_file
                        database_fh
                        database_str
@@ -153,8 +150,8 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
   }
 
   foreach my $name (@want_names) {
-    ok ($meta->has_attribute($name), "$name - has_attribute");
-    my $attr = $meta->get_attribute($name);
+    my $attr = $meta->find_attribute_by_name($name);
+    ok ($attr,   "$name - find_attribute_by_name");
     ok ($attr && $attr->has_documentation,   "$name - has_documentation");
     isnt ($attr && $attr->documentation, '', "$name - documentation");
 
@@ -174,11 +171,11 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
   }
 }
 {
-  my $instance = MooseX::Iterator::Locate->new;
+  my $instance = TestLocate->new;
   my $meta = $instance->meta;
 
-  my $attr = $meta->get_attribute('database_file');
-  ok ($attr, 'database_file attribute exists');
+  my $attr = $meta->find_attribute_by_name('database_file');
+  ok ($attr, 'database_file - find_attribute_by_name');
   ok ($attr && $attr->has_default, 'database_file - has_default');
 
   ok ($attr && $attr->is_default_a_coderef,
@@ -193,34 +190,11 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
 # UseMMAP enum
 
 {
-  my $meta = MooseX::Iterator::Locate->meta;
-  my $attr = $meta->get_attribute('use_mmap');
+  my $meta = TestLocate->meta;
+  my $attr = $meta->find_attribute_by_name('use_mmap');
+  ok ($attr,   "use_mmap - find_attribute_by_name");
   ok ($attr && $attr->has_type_constraint,
       'use_mmap - has_type_constraint');
-
-  ok ($attr && $attr->verify_against_type_constraint('if_possible'),
-      'use_mmap - verify_against_type_constraint(if_possible) pass');
-  {
-    my $pass = 0;
-    eval {
-      $attr->verify_against_type_constraint('no_such_choice');
-      $pass = 1;
-    };
-    my $err = $@;
-    ok (! $pass,
-        'use_mmap - verify_against_type_constraint(no_such_choice) no pass');
-    isnt ($err, undef,
-          'use_mmap - verify_against_type_constraint(no_such_choice) error');
-  }
-
-  my $tcon = $attr && $attr->type_constraint;
-  # "Parameterized" not "Enum" because it's a Maybe[], or some such
-  # isa_ok ($tcon, 'Moose::Meta::TypeConstraint::Enum');
-
-  ok ($tcon && $tcon->check('if_possible'),
-      'use_mmap - tcon if_possible');
-  ok ($tcon && ! $tcon->check('no_such_choice'),
-      'use_mmap - tcon no_such_choice');
 }
 
 
@@ -228,16 +202,15 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
 # methods
 
 {
-  my $meta = MooseX::Iterator::Locate->meta;
+  my $meta = TestLocate->meta;
   my @want_names = (qw(next
                        has_next
                        peek
                        reset
                      ));
   foreach my $name (@want_names) {
-    ok ($meta->has_method($name), "$name - has_method");
-    my $method = $meta->get_method($name);
-    ok ($method, "$name - get_method");
+    my $method = $meta->find_method_by_name($name);
+    ok ($method, "$name - find_method_by_name");
   }
   {
     my $name = 'new';
@@ -247,9 +220,9 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
   my @want = slurp_zeros ($samp_zeros);
   my $new  = $meta->find_method_by_name('new');
   my $next = $meta->find_method_by_name('next');
-  my $it = $new && $new->execute ('MooseX::Iterator::Locate',
+  my $it = $new && $new->execute ('TestLocate',
                                   database_file => $samp_locatedb);
-  isa_ok ($it, 'MooseX::Iterator::Locate',
+  isa_ok ($it, 'TestLocate',
           'new() via execute()');
   my $got = $it && $next && $next->execute($it);
   is ($got, $want[0], 'next() via execute()');

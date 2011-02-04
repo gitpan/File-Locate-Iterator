@@ -1,4 +1,4 @@
-Copyright 2009, 2010 Kevin Ryde
+Copyright 2009, 2010, 2011 Kevin Ryde
 
 This file is part of File-Locate-Iterator.
 
@@ -15,6 +15,11 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License along
 with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
+
+Version 17, February 2011
+    - MooseX fix add Moose::Object,
+    - MooseX add attributes describing the parameters to new()
+    - try PerlIO::Layers mappable before File::Map, to avoid spurious warnings
 
 Version 16, September 2010
     - test manifest only as an author test
