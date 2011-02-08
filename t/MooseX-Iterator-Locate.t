@@ -38,7 +38,7 @@ require MooseX::Iterator::Locate;
 #-----------------------------------------------------------------------------
 # VERSION
 
-my $want_version = 17;
+my $want_version = 18;
 is ($MooseX::Iterator::Locate::VERSION, $want_version, 'VERSION variable');
 is (MooseX::Iterator::Locate->VERSION,  $want_version, 'VERSION class method');
 { ok (eval { MooseX::Iterator::Locate->VERSION($want_version); 1 },
@@ -174,7 +174,8 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
   }
 }
 {
-  my $instance = MooseX::Iterator::Locate->new;
+  my $instance = MooseX::Iterator::Locate->new
+    (database_file => $samp_locatedb);
   my $meta = $instance->meta;
 
   my $attr = $meta->get_attribute('database_file');

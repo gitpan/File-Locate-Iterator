@@ -30,7 +30,7 @@ use Getopt::Long;
 use Iterator::Simple 'igrep';
 use Iterator::Simple::Locate;
 
-our $VERSION = 17;
+our $VERSION = 18;
 
 use FindBin;
 my $progname = $FindBin::Script;

@@ -171,7 +171,7 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
   }
 }
 {
-  my $instance = TestLocate->new;
+  my $instance = TestLocate->new (database_file => $samp_locatedb);
   my $meta = $instance->meta;
 
   my $attr = $meta->find_attribute_by_name('database_file');

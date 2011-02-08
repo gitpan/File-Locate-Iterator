@@ -19,7 +19,6 @@
 
 package MyTestHelpers;
 use strict;
-use warnings;
 use Exporter;
 use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
 
@@ -54,13 +53,35 @@ sub DEBUG { 0 }
   }
   END {
     if ($warning_count) {
-      require Test::More;
-      Test::More::diag("Saw $warning_count warning(s):");
-      Test::More::diag($stacktraces);
-      Test::More::diag("Exit code 1 for warnings");
+      diag("Saw $warning_count warning(s):");
+      if (defined $stacktraces) {
+        diag($stacktraces);
+      } else {
+        diag('(Devel::StackTrace not available for backtrace)');
+      }
+      diag("Exit code 1 for warnings");
       $? = 1;
     }
   }
+}
+
+sub diag {
+  if (Test::More->can('diag')) {
+    Test::More::diag (@_);
+  } else {
+    my $msg = join('', map {defined($_)?$_:'[undef]'} @_)."\n";
+    $msg =~ s/^/# /mg;
+    print STDERR $msg;
+  }
+}
+
+sub dump {
+  my ($thing) = @_;
+  if (eval { require Data::Dumper; 1 }) {
+    diag (Data::Dumper::Dumper ($thing));
+  } else {
+    diag ("Data::Dumper not available");
+  }    
 }
 
 #-----------------------------------------------------------------------------
