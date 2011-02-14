@@ -25,7 +25,7 @@ use Carp;
 # uncomment this to run the ### lines
 #use Smart::Comments;
 
-our $VERSION = 18;
+our $VERSION = 19;
 
 our %cache;
 

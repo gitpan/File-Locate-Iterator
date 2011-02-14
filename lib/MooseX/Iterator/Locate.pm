@@ -27,7 +27,7 @@ extends
   'Moose::Object'; # does() and stuff
 with 'MooseX::Iterator::Role';
 
-our $VERSION = 18;
+our $VERSION = 19;
 
 # uncomment this to run the ### lines
 #use Smart::Comments;

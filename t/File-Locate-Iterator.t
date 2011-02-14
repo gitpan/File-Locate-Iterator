@@ -29,7 +29,7 @@ BEGIN { MyTestHelpers::nowarnings() }
 use File::Locate::Iterator;
 
 {
-  my $want_version = 18;
+  my $want_version = 19;
   is ($File::Locate::Iterator::VERSION, $want_version, 'VERSION variable');
   is (File::Locate::Iterator->VERSION,  $want_version, 'VERSION class method');
 
@@ -204,7 +204,6 @@ if ($] >= 5.008) {
 
   # with 'regexp' undef
   {
-    my $regexp = qr{^/usr/tmp};
     my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
                                           regexp => undef);
     my $noinfloop = no_inf_loop("$samp_locatedb with *.c");

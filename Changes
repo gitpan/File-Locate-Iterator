@@ -16,6 +16,9 @@ You should have received a copy of the GNU General Public License along
 with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
+Version 19, February 2011
+    - tests fix for File::Map version required
+
 Version 18, February 2011
     - tests fix MooseX avoid depending on system locatedb
 

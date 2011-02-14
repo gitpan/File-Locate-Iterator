@@ -38,7 +38,7 @@ require MooseX::Iterator::Locate;
 #-----------------------------------------------------------------------------
 # VERSION
 
-my $want_version = 18;
+my $want_version = 19;
 is ($MooseX::Iterator::Locate::VERSION, $want_version, 'VERSION variable');
 is (MooseX::Iterator::Locate->VERSION,  $want_version, 'VERSION class method');
 { ok (eval { MooseX::Iterator::Locate->VERSION($want_version); 1 },
