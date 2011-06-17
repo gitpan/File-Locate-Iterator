@@ -30,7 +30,7 @@ sub WriteMakefile {
 
   if (exists $opts{'META_MERGE'}) {
     # cf. ExtUtils::MM_Any::metafile_data() default ['t','inc']
-    foreach ('devel', 'examples', 'junk', 'maybe') {
+    foreach ('xt', 'devel', 'examples', 'junk', 'maybe') {
       my $dir = $_;
       if (-d $dir) {
         push @{$opts{'META_MERGE'}->{'no_index'}->{'directory'}}, $dir;
@@ -43,7 +43,14 @@ sub WriteMakefile {
     _meta_merge_shared_devel (\%opts);
   }
 
+  if (! defined $opts{'clean'}->{'FILES'}) {
+    $opts{'clean'}->{'FILES'} = '';
+  }
   $opts{'clean'}->{'FILES'} .= ' temp-lintian $(MY_HTML_FILES)';
+
+  if (! defined $opts{'realclean'}->{'FILES'}) {
+    $opts{'realclean'}->{'FILES'} = '';
+  }
   $opts{'realclean'}->{'FILES'} .= ' TAGS';
 
   if (! defined &MY::postamble) {
@@ -51,9 +58,9 @@ sub WriteMakefile {
   }
 
   foreach ('MyMakeMakerExtras_Pod_Coverage',
-                   'MyMakeMakerExtras_LINT_FILES',
-                   'MY_NO_HTML',
-                   'MY_EXTRA_FILE_PART_OF') {
+           'MyMakeMakerExtras_LINT_FILES',
+           'MY_NO_HTML',
+           'MY_EXTRA_FILE_PART_OF') {
     $my_options{$_} = delete $opts{$_};
   }
 
@@ -122,6 +129,9 @@ sub _meta_merge_shared_devel {
   _meta_merge_req_add (_meta_merge_maximum_devel($opts),
                        # the "make unused" target below
                        'warnings::unused' => 0);
+  _meta_merge_req_add (_meta_merge_maximum_devel($opts),
+                       # used a lot
+                       'Smart::Comments' => 0);
   if (-e 'inc/my_pod2html') {
     if (_min_perl_version_lt ($opts, 5.009003)) {
       _meta_merge_req_add (_meta_merge_maximum_devel($opts),
@@ -250,38 +260,61 @@ HERE
     if (-d 't') { $lint_files .= ' t/*.t'; }
     if (-d 'xt') { $lint_files .= ' xt/*.t'; }
 
-    foreach ('examples', 'devel') {
-      my $dir = $_;
-      my $pattern = "$dir/*.pl";
-      if (glob ($pattern)) {
-        $lint_files .= " $pattern";
+    my ($dir, $pattern);
+    foreach $dir ('t', 'xt', 'examples', 'devel') {
+      foreach $pattern ("$dir/*.pl", "$dir/*.pm") {
+        my @glob = glob($pattern);
+        ### $pattern
+        ### @glob
+        if (@glob) {
+          $lint_files .= " $pattern";
+          ### $lint_files
+        }
       }
     }
-  }
-
-  my $podcoverage = '';
-  foreach (@{$my_options{'MyMakeMakerExtras_Pod_Coverage'}}) {
-      my $class = $_;
-    # the "." obscures it from MyExtractUse.pm
-    $podcoverage .= "\t-\$(PERLRUNINST) -e 'use "."Pod::Coverage package=>$class'\n";
   }
 
   $post .= "LINT_FILES = $lint_files\n"
     . <<'HERE';
 lint:
 	perl -MO=Lint $(LINT_FILES)
+HERE
+
+  # ------ pc: ------
+  $post .= <<'HERE';
 pc:
 HERE
-  # "podchecker -warnings -warnings" too much reporting every < and >
-  $post .= $podcoverage . <<'HERE';
+  # ------ pc: podcoverage ------
+  foreach (@{$my_options{'MyMakeMakerExtras_Pod_Coverage'}}) {
+    my $class = $_;
+    # the "." obscures it from MyExtractUse.pm
+    $post .= "\t-\$(PERLRUNINST) -e 'use "."Pod::Coverage package=>$class'\n";
+  }
+  # ------ pc: podlinkcheck ------
+  $post .= <<'HERE';
 	-podlinkcheck -I lib `ls $(LINT_FILES) | grep -v '\.bash$$|\.desktop$$\.png$$|\.xpm$$'`
+HERE
+  # ------ pc: podchecker ------
+  # "podchecker -warnings -warnings" too much reporting every < and >
+  $post .= <<'HERE';
 	-podchecker `ls $(LINT_FILES) | grep -v '\.bash$$|\.desktop$$\.png$$|\.xpm$$'`
 	perlcritic $(LINT_FILES)
+HERE
+  # ------ cpants_lint ------
+  $post .= <<'HERE';
+kw:
+	make $(DISTVNAME).tar.gz
+	-cpants_lint $(DISTVNAME).tar.gz
+HERE
+
+  # ------ unused ------
+  $post .= <<'HERE';
 unused:
 	for i in $(LINT_FILES); do perl -Mwarnings::unused -I lib -c $$i; done
 
 HERE
 
+  # ------ myman ------
   $post .= <<'HERE';
 myman:
 	-mv MANIFEST MANIFEST.old
@@ -290,6 +323,7 @@ myman:
 
 # find files in the dist with mod times this year, but without this year in
 # the copyright line
+MY_HIDE=
 check-copyright-years:
 	year=`date +%Y`; \
 	tar tvfz $(DISTVNAME).tar.gz \
@@ -307,7 +341,9 @@ check-copyright-years:
 	      | version.texi | */version.texi \
 	      | *utf16* | examples/rs''s2lea''fnode.conf \
 	      | */MathI''mage/ln2.gz | */MathI''mage/pi.gz \
-	      | *.mo | *.locatedb* | t/samp.*) \
+	      | *.mo | *.locatedb* | t/samp.* \
+	      | t/empty.dat | t/*.xpm | t/*.xbm | t/*.jpg | t/*.gif \
+	      | t/*.g$(MY_HIDE)d) \
 	        continue ;; \
 	      *.gz) GREP=zgrep ;; \
 	    esac; \
@@ -321,13 +357,8 @@ check-copyright-years:
 	  done; \
 	  exit $$result)
 
-# only a DEBUG non-zero number is bad, so an expression can copy a debug from
-# another package
-check-debug-constants:
-	if egrep -nH 'DEBUG => [1-9]|^[ \t]*use Smart::Comments' $(EXE_FILES) $(TO_INST_PM) t/*.t xt/*.t; then exit 1; else exit 0; fi
-
 check-spelling:
-	if find . -type f | egrep -v '(Makefile|dist-deb)' | xargs egrep --color=always -nHi '[c]usor|[r]efering|[w]riteable|[n]ineth|\b[o]mmitt?ed|[o]mited|[$$][rd]elf|[r]equrie|[n]oticable|[c]ontinous|[e]xistant|[e]xplict|[a]gument|[d]estionation|\b[t]he the\b|\b[n]ote sure\b'; \
+	if find . -type f | egrep -v '(Makefile|dist-deb)' | xargs egrep --color=always -nHi '[g]lpyh|[r]ectanglar|[a]vailabe|[g]rabing|[c]usor|[r]efering|[w]riteable|[n]ineth|\b[o]mmitt?ed|[o]mited|[$$][rd]elf|[r]equrie|[n]oticable|[c]ontinous|[e]xistant|[e]xplict|[a]gument|[d]estionation|\b[t]he the\b|\b[i]n in\b|\b[tw]hen then\b|\b[n]ote sure\b'; \
 	then false; else true; fi
 HERE
 
@@ -366,8 +397,9 @@ HERE
               : 'all');
   chomp($arch);
   my $debname = (defined $makemaker->{'EXE_FILES'}
-                 ? '$(DISTNAME)'
-                 : "\Llib$makemaker->{'DISTNAME'}-perl");
+                 && $makemaker->{'EXE_FILES'}->[0] !~ /^gtk2/
+                 ? lc($makemaker->{'DISTNAME'})
+                 : lc("lib$makemaker->{'DISTNAME'}-perl"));
   $post .=
     "DEBNAME = $debname\n"
       . "DPKG_ARCH = $arch\n"
@@ -404,19 +436,18 @@ $(DEBFILE) deb:
 	rm -rf $(DISTVNAME)
 
 lintian-deb: $(DEBFILE)
-	lintian -i -X new-package-should-close-itp-bug $(DEBFILE)
+	lintian -I -i --suppress-tags new-package-should-close-itp-bug,desktop-entry-contains-encoding-key \
+	  $(DEBFILE)
 lintian-source:
 	rm -rf temp-lintian; \
 	mkdir temp-lintian; \
 	cd temp-lintian; \
 	cp ../$(DISTVNAME).tar.gz $(DEBNAME)_$(VERSION).orig.tar.gz; \
 	tar xfz $(DEBNAME)_$(VERSION).orig.tar.gz; \
-        echo 'empty-debian-diff' \
-             >$(DISTVNAME)/debian/source.lintian-overrides; \
 	mv -T $(DISTVNAME) $(DEBNAME)-$(VERSION); \
 	dpkg-source -b $(DEBNAME)-$(VERSION) \
 	               $(DEBNAME)_$(VERSION).orig.tar.gz; \
-	lintian -i -X missing-debian-source-format *.dsc; \
+	lintian -I -i --suppress-tags empty-debian-diff *.dsc; \
 	cd ..; \
 	rm -rf temp-lintian
 

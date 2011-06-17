@@ -29,11 +29,11 @@ BEGIN { MyTestHelpers::nowarnings() }
 eval { require Iterator }
   or plan skip_all => "Iterator.pm not available -- $@";
 
-plan tests => 8;
+plan tests => 20;
 require Iterator::Locate;
 
 {
-  my $want_version = 19;
+  my $want_version = 20;
   is ($Iterator::Locate::VERSION, $want_version, 'VERSION variable');
   is (Iterator::Locate->VERSION,  $want_version, 'VERSION class method');
 
@@ -81,6 +81,72 @@ sub slurp_zeros {
     push @got, $it->value;
   }
   is_deeply (\@got, \@want, 'samp.locatedb');
+}
+
+#------------------------------------------------------------------------------
+# suffix
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Locate->new (database_str => $str,
+                                  suffix => '.pl');
+  is ($it->value, '/hello/world.pl');
+  ok ($it->is_exhausted);
+}
+
+#------------------------------------------------------------------------------
+# suffixes
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Locate->new (database_str => $str,
+                                  suffixes => ['.pm','.pl']);
+  is ($it->value, '/hello/world.pl');
+  ok ($it->is_exhausted);
+}
+
+#------------------------------------------------------------------------------
+# glob
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Locate->new (database_str => $str,
+                                  glob => '*.pl');
+  is ($it->value, '/hello/world.pl');
+  ok ($it->is_exhausted);
+}
+
+#------------------------------------------------------------------------------
+# globs
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Locate->new (database_str => $str,
+                                  globs => ['*.pm','*.pl']);
+  is ($it->value, '/hello/world.pl');
+  ok ($it->is_exhausted);
+}
+
+#------------------------------------------------------------------------------
+# regexp
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Locate->new (database_str => $str,
+                                  regexp => qr/\.pl/);
+  is ($it->value, '/hello/world.pl');
+  ok ($it->is_exhausted);
+}
+
+#------------------------------------------------------------------------------
+# regexps
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Locate->new (database_str => $str,
+                                  regexps => [ qr/\.pm/, qr/\.pl/ ]);
+  is ($it->value, '/hello/world.pl');
+  ok ($it->is_exhausted);
 }
 
 exit 0;

@@ -27,10 +27,10 @@ extends
   'Moose::Object'; # does() and stuff
 with 'MooseX::Iterator::Role';
 
-our $VERSION = 19;
+our $VERSION = 20;
 
 # uncomment this to run the ### lines
-#use Smart::Comments;
+#use Devel::Comments;
 
 # meta new_object() per Moose::Cookbook::Basics::Recipe11
 sub new {
@@ -39,34 +39,55 @@ sub new {
   return $class->meta->new_object (__INSTANCE__ => $self, @_);
 }
 
+# Crib: All attributes "lazy" so they're not plugged in at the new() time.
+# In particular storing the "undef" defaults would interfere with the
+# globs/regexps setups in File::Locate::Iterator new(), and make ->next()
+# match everything.
+#
+
 has 'database_file'
   => (is      => 'bare',
       isa     => 'Maybe[Str]',
-      # default as subr returning value,
-      # default_database_file() is dynamic from $ENV{'LOCATE_PATH'}
+      # default as subr returning value, func default_database_file() gets
+      # current $ENV{'LOCATE_PATH'}
       default => File::Locate::Iterator->can('default_database_file'),
+      lazy    => 1,
       documentation => 'Database file name',
      );
-has 'database_fh'  => (is      => 'bare',
-                       isa     => 'Maybe[FileHandle]',
-                       default => undef,
-                       documentation => 'Database file handle',
-                      );
-has 'database_str' => (is      => 'bare',
-                       isa     => 'Maybe[Str]',
-                       default => undef,,
-                       documentation => 'Database contents in a string',
-                      );
+has 'database_fh'
+  => (is      => 'bare',
+      isa     => 'Maybe[FileHandle]',
+      default => undef,
+      lazy    => 1,
+      documentation => 'Database file handle',
+     );
+has 'database_str'
+  => (is      => 'bare',
+      isa     => 'Maybe[Str]',
+      default => undef,
+      lazy    => 1,
+      documentation => 'Database contents in a string',
+     );
+has 'database_str_ref'
+  => (is      => 'bare',
+      isa     => 'Maybe[ScalarRef]',
+      default => undef,
+      lazy    => 1,
+      documentation => 'Database contents in a ref to a string',
+     );
+
 has 'suffix'
   => (is      => 'bare',
       isa     => 'Maybe[Str]',
       default => undef,
+      lazy    => 1,
       documentation => 'A suffix to match, like ".c"',
      );
 has 'suffixes'
   => (is      => 'bare',
       isa     => 'Maybe[ArrayRef[Str]]',
       default => undef,
+      lazy    => 1,
       documentation => 'An array of suffixes, any of which to match',
      );
 
@@ -74,12 +95,14 @@ has 'glob'
   => (is      => 'bare',
       isa     => 'Maybe[Str]',
       default => undef,
+      lazy    => 1,
       documentation => 'A glob pattern to match, like "*.pl"',
      );
 has 'globs'
   => (is      => 'bare',
       isa     => 'Maybe[ArrayRef[Str]]',
       default => undef,
+      lazy    => 1,
       documentation => 'An array of glob patterns, any of which to match',
      );
 
@@ -87,12 +110,14 @@ has 'regexp'
   => (is      => 'bare',
       isa     => 'Maybe[Str|RegexpRef]',
       default => undef,
+      lazy    => 1,
       documentation => 'A regexp to match, like qr/ban(an)*a/',
      );
 has 'regexps'
   => (is      => 'bare',
       isa     => 'Maybe[ArrayRef[Str|RegexpRef]]',
       default => undef,
+      lazy    => 1,
       documentation => 'An array of regexps, any of which to match',
      );
 
@@ -104,6 +129,7 @@ has 'use_mmap'
   => (is      => 'bare',
       isa     => 'Maybe[File::Locate::Iterator::UseMMAP]',
       default => 'default',
+      lazy    => 1,
       documentation => 'Whether to use mmap() for the database (with File::Map)',
      );
 
@@ -113,10 +139,12 @@ has 'use_mmap'
 
 sub next {
   my ($self) = @_;
-  ### MooseX next()
+  ### MooseX next() ...
   if (exists $self->{'_peek'}) {
+    ### return _peek: $self->{'_peek'}
     return delete $self->{'_peek'};
   } else {
+    ### super NEXT
     return $self->SUPER::next;
   }
 }
@@ -129,7 +157,7 @@ sub has_next {
 
 sub peek {
   my ($self) = @_;
-  ### MooseX peek(): $self
+  ### MooseX peek() ...
   if (exists $self->{'_peek'}) {
     return $self->{'_peek'};
   } else {
@@ -140,7 +168,7 @@ sub peek {
 
 sub rewind {
   my ($self) = @_;
-  ### MooseX rewind()
+  ### MooseX rewind() ...
   delete $self->{'_peek'};
   $self->SUPER::rewind;
 }
@@ -174,15 +202,18 @@ C<File::Iterator::Locate>,
     File::Iterator::Locate
       MooseX::Iterator::Locate
 
-and does
+and has roles
 
     MooseX::Iterator::Role
 
 =head1 DESCRIPTION
 
-C<MooseX::Iterator::Locate> reads a "locate" database file in iterator
-style.  It offers C<MooseX::Iterator> style methods as a front-end to
+C<MooseX::Iterator::Locate> reads a "locate" database file in
+C<MooseX::Iterator> style.  It's implemented as a front-end to
 C<File::Locate::Iterator>.
+
+See F<examples/moosex-iterator.pl> in the File-Locate-Iterator sources for a
+simple complete program.
 
 =head1 FUNCTIONS
 
@@ -192,6 +223,9 @@ C<File::Locate::Iterator>.
 
 Create and return a new C<MooseX::Iterator::Locate> object.  Optional
 key/value pairs are passed to C<< File::Locate::Iterator->new >>.
+
+    my $it = MooseX::Iterator::Locate->new
+               (suffixes => ['.pm', '.pl']);
 
 =item C<< $entry = $it->next >>
 
@@ -244,6 +278,8 @@ since C<default_database_file> looks at C<%ENV>.)
 =head1 SEE ALSO
 
 L<MooseX::Iterator>, L<File::Locate::Iterator>, L<Moose>, L<Moose::Object>
+
+L<Moose::Manual::Roles>
 
 =head1 HOME PAGE
 

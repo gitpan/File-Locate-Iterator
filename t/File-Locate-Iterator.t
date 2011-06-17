@@ -20,7 +20,7 @@
 use 5.006;
 use strict;
 use warnings;
-use Test::More tests => 107;
+use Test::More tests => 123;
 
 use lib 't';
 use MyTestHelpers;
@@ -28,8 +28,11 @@ BEGIN { MyTestHelpers::nowarnings() }
 
 use File::Locate::Iterator;
 
+# uncomment this to run the ### lines
+#use Devel::Comments;
+
 {
-  my $want_version = 19;
+  my $want_version = 20;
   is ($File::Locate::Iterator::VERSION, $want_version, 'VERSION variable');
   is (File::Locate::Iterator->VERSION,  $want_version, 'VERSION class method');
 
@@ -103,211 +106,209 @@ if ($] >= 5.008) {
   if (! $have_open_string) { diag "no open string available -- $@"; }
 }
 
+my $orig_RS = $/;
+
 {
-  my $orig_RS = $/;
-
+  my $it = File::Locate::Iterator->new (database_file => $samp_locatedb);
+  my @want = @samp_zeros;
   {
-    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb);
-    my @want = @samp_zeros;
-    {
-      my @got;
-      my $noinfloop = no_inf_loop($samp_locatedb);
-      while (defined (my $filename = $it->next)) {
-        push @got, $filename;
-        $noinfloop->();
-      }
-      is_deeply (\@got, \@want, 'samp.locatedb full');
-    }
-    diag "rewind(), fh_start ",$it->{'fh_start'};
-    $it->rewind;
-    {
-      my @got;
-      my $noinfloop = no_inf_loop($samp_locatedb);
-      while (defined (my $filename = $it->next)) {
-        push @got, $filename;
-        $noinfloop->();
-      }
-      is_deeply (\@got, \@want, 'samp.locatedb full, after rewind');
-    }
-  }
-
-  {
-    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
-                                          use_mmap => 0);
-    my @want = @samp_zeros;
-    {
-      my @got;
-      my $noinfloop = no_inf_loop($samp_locatedb);
-      while (defined (my $filename = $it->next)) {
-        push @got, $filename;
-        $noinfloop->();
-      }
-      is_deeply (\@got, \@want, 'samp.locatedb full, no mmap');
-    }
-    diag "rewind(), no mmap, fh_start ",$it->{'fh_start'};
-    $it->rewind;
-    {
-      my @got;
-      my $noinfloop = no_inf_loop($samp_locatedb);
-      while (defined (my $filename = $it->next)) {
-        push @got, $filename;
-        $noinfloop->();
-      }
-      is_deeply (\@got, \@want, 'samp.locatedb full, no mmap, after rewind');
-    }
-  }
-
-  # with 'glob'
-  {
-    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
-                                          glob => '*.c');
-    my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
-    my @want = grep {/\.c$/} @samp_zeros;
     my @got;
+    my $noinfloop = no_inf_loop($samp_locatedb);
     while (defined (my $filename = $it->next)) {
       push @got, $filename;
       $noinfloop->();
     }
-    is_deeply (\@got, \@want, 'samp.locatedb glob *.c');
+    is_deeply (\@got, \@want, 'samp.locatedb full');
   }
-
-  # with 'regexp'
+  diag "rewind(), fh_start ",$it->{'fh_start'};
+  $it->rewind;
   {
-    my $regexp = qr{^/usr/tmp};
-    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
-                                          regexp => $regexp);
-    my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
-    my @want = grep {/$regexp/} @samp_zeros;
     my @got;
+    my $noinfloop = no_inf_loop($samp_locatedb);
     while (defined (my $filename = $it->next)) {
       push @got, $filename;
       $noinfloop->();
     }
-    is_deeply (\@got, \@want, 'samp.locatedb regexp /usr/tmp');
+    is_deeply (\@got, \@want, 'samp.locatedb full, after rewind');
   }
+}
 
-  # with 'glob' and 'regexp'
+{
+  my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
+                                        use_mmap => 0);
+  my @want = @samp_zeros;
   {
-    my $regexp = qr{^/usr/tmp};
-    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
-                                          regexp => $regexp,
-                                          glob => '*.c');
-    my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
-    my @want = grep {/$regexp|\.c$/} @samp_zeros;
     my @got;
+    my $noinfloop = no_inf_loop($samp_locatedb);
     while (defined (my $filename = $it->next)) {
       push @got, $filename;
       $noinfloop->();
     }
-    is_deeply (\@got, \@want, 'samp.locatedb regexp and glob');
+    is_deeply (\@got, \@want, 'samp.locatedb full, no mmap');
   }
-
-  # with 'regexp' undef
+  diag "rewind(), no mmap, fh_start ",$it->{'fh_start'};
+  $it->rewind;
   {
-    my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
-                                          regexp => undef);
-    my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
-    my @want = @samp_zeros;
     my @got;
+    my $noinfloop = no_inf_loop($samp_locatedb);
     while (defined (my $filename = $it->next)) {
       push @got, $filename;
       $noinfloop->();
     }
-    is_deeply (\@got, \@want, 'samp.locatedb regexp /usr/tmp');
+    is_deeply (\@got, \@want, 'samp.locatedb full, no mmap, after rewind');
   }
+}
 
-  {
-    foreach my $use_mmap (0, 'if_possible') {
+# with 'glob'
+{
+  my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
+                                        glob => '*.c');
+  my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
+  my @want = grep {/\.c$/} @samp_zeros;
+  my @got;
+  while (defined (my $filename = $it->next)) {
+    push @got, $filename;
+    $noinfloop->();
+  }
+  is_deeply (\@got, \@want, 'samp.locatedb glob *.c');
+}
 
-      my $database_fh_raw;
-      my $fh_raw;
-      if (eval { open $fh_raw, '<:raw', $samp_locatedb }) {
-        $database_fh_raw = ['database_fh :raw', database_fh => $fh_raw];
-      } else {
-        $database_fh_raw = "cannot open :raw $samp_locatedb";
-      }
+# with 'regexp'
+{
+  my $regexp = qr{^/usr/tmp};
+  my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
+                                        regexp => $regexp);
+  my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
+  my @want = grep {/$regexp/} @samp_zeros;
+  my @got;
+  while (defined (my $filename = $it->next)) {
+    push @got, $filename;
+    $noinfloop->();
+  }
+  is_deeply (\@got, \@want, 'samp.locatedb regexp /usr/tmp');
+}
 
-      my $fh_str;
-      my $database_fh_str;
-      if ($have_open_string) {
-        open $fh_str, '<', \$samp_locatedb_str
-          or die "oops, cannot open string";
-        $database_fh_str = [ 'database_fh string', database_fh => $fh_str ];
-      } else {
-        $database_fh_str = "open string not available";
-      }
+# with 'glob' and 'regexp'
+{
+  my $regexp = qr{^/usr/tmp};
+  my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
+                                        regexp => $regexp,
+                                        glob => '*.c');
+  my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
+  my @want = grep {/$regexp|\.c$/} @samp_zeros;
+  my @got;
+  while (defined (my $filename = $it->next)) {
+    push @got, $filename;
+    $noinfloop->();
+  }
+  is_deeply (\@got, \@want, 'samp.locatedb regexp and glob');
+}
 
-      open MYHANDLE, '<', $samp_locatedb
-        or die "oops, cannot open $samp_locatedb";
-      binmode (MYHANDLE)
-        or die "oops, cannot set binary mode on MYHANDLE";
+# with 'regexp' undef
+{
+  my $it = File::Locate::Iterator->new (database_file => $samp_locatedb,
+                                        regexp => undef);
+  my $noinfloop = no_inf_loop("$samp_locatedb with *.c");
+  my @want = @samp_zeros;
+  my @got;
+  while (defined (my $filename = $it->next)) {
+    push @got, $filename;
+    $noinfloop->();
+  }
+  is_deeply (\@got, \@want, 'samp.locatedb regexp /usr/tmp');
+}
 
-      open OFFHANDLE, '<', $samp_locatedb_offset
-        or die "oops, cannot open $samp_locatedb";
-      binmode (OFFHANDLE)
-        or die "oops, cannot set binary mode on OFFHANDLE";
-      seek OFFHANDLE, 87, 0
-        or die "oops, cannot seek OFFHANDLE";
+{
+  foreach my $use_mmap (0, 'if_possible') {
 
-      foreach my $database
-        (['database_file',      database_file => $samp_locatedb],
-         ['database_fh ref',    database_fh => \*MYHANDLE],
-         ['database_fh offset', database_fh => \*OFFHANDLE ],
-         $database_fh_raw,
-         $database_fh_str) {
-      SKIP: {
-          ref $database
-            or skip $database, 2;
-          my ($database_desc, @database_option) = @$database;
+    my $database_fh_raw;
+    my $fh_raw;
+    if (eval { open $fh_raw, '<:raw', $samp_locatedb }) {
+      $database_fh_raw = ['database_fh :raw', database_fh => $fh_raw];
+    } else {
+      $database_fh_raw = "cannot open :raw $samp_locatedb";
+    }
 
-          my $desc = "$database_desc, use_mmap=$use_mmap";
-          diag $desc;
+    my $fh_str;
+    my $database_fh_str;
+    if ($have_open_string) {
+      open $fh_str, '<', \$samp_locatedb_str
+        or die "oops, cannot open string";
+      $database_fh_str = [ 'database_fh string', database_fh => $fh_str ];
+    } else {
+      $database_fh_str = "open string not available";
+    }
 
+    open MYHANDLE, '<', $samp_locatedb
+      or die "oops, cannot open $samp_locatedb";
+    binmode (MYHANDLE)
+      or die "oops, cannot set binary mode on MYHANDLE";
+
+    open OFFHANDLE, '<', $samp_locatedb_offset
+      or die "oops, cannot open $samp_locatedb";
+    binmode (OFFHANDLE)
+      or die "oops, cannot set binary mode on OFFHANDLE";
+    seek OFFHANDLE, 87, 0
+      or die "oops, cannot seek OFFHANDLE";
+
+    foreach my $database
+      (['database_file',      database_file => $samp_locatedb],
+       ['database_fh ref',    database_fh => \*MYHANDLE],
+       ['database_fh offset', database_fh => \*OFFHANDLE ],
+       $database_fh_raw,
+       $database_fh_str) {
+    SKIP: {
+        ref $database
+          or skip $database, 2;
+        my ($database_desc, @database_option) = @$database;
+
+        my $desc = "$database_desc, use_mmap=$use_mmap";
+        diag $desc;
+
+        {
+          my $it = File::Locate::Iterator->new (@database_option,
+                                                use_mmap => $use_mmap);
+          $desc .= ($it->_using_mmap ? "yes" : "no");
+          my @want = @samp_zeros;
           {
-            my $it = File::Locate::Iterator->new (@database_option,
-                                                  use_mmap => $use_mmap);
-            $desc .= ($it->_using_mmap ? "yes" : "no");
-            my @want = @samp_zeros;
-            {
-              my $noinfloop = no_inf_loop("$desc");
-              my @got;
-              while (my ($filename) = $it->next) {
-                push @got, $filename;
-                $noinfloop->();
-              }
+            my $noinfloop = no_inf_loop("$desc");
+            my @got;
+            while (my ($filename) = $it->next) {
+              push @got, $filename;
+              $noinfloop->();
+            }
 
-              if (0) {
-                require Data::Dumper;
-                diag (Data::Dumper->new([\@samp_zeros],['samp_zeros'])
-                      ->Useqq(1)->Dump);
-                diag (Data::Dumper->new([\@got],['got'])
-                      ->Useqq(1)->Dump);
-              }
-              is_deeply (\@got, \@want, "samp.locatedb  $desc");
+            if (0) {
+              require Data::Dumper;
+              diag (Data::Dumper->new([\@samp_zeros],['samp_zeros'])
+                    ->Useqq(1)->Dump);
+              diag (Data::Dumper->new([\@got],['got'])
+                    ->Useqq(1)->Dump);
             }
-            diag "$desc rewind";
-            $it->rewind;
-            {
-              my $noinfloop = no_inf_loop("$desc");
-              my @got;
-              while (my ($filename) = $it->next) {
-                push @got, $filename;
-                $noinfloop->();
-              }
-              is_deeply (\@got, \@want, "samp.locatedb, rewind,  $desc");
+            is_deeply (\@got, \@want, "samp.locatedb  $desc");
+          }
+          diag "$desc rewind";
+          $it->rewind;
+          {
+            my $noinfloop = no_inf_loop("$desc");
+            my @got;
+            while (my ($filename) = $it->next) {
+              push @got, $filename;
+              $noinfloop->();
             }
+            is_deeply (\@got, \@want, "samp.locatedb, rewind,  $desc");
           }
         }
       }
-
-      close MYHANDLE;
     }
+
+    close MYHANDLE;
   }
-  is ($/, $orig_RS, 'input record separator unchanged');
 }
 
 #-----------------------------------------------------------------------------
 # bad files
+
 
 {
   package MyFileRemover;
@@ -323,8 +324,6 @@ if ($] >= 5.008) {
 }
 
 {
-  my $orig_RS = $/;
-
   my $filename = 'File-Locate-Iterator.tmp';
   my $remover = MyFileRemover->new ($filename);
 
@@ -398,10 +397,10 @@ if ($] >= 5.008) {
     foreach my $use_mmap (0, 'if_possible') {
       my $got_err;
       my $mmap_used = ($use_mmap ? 'no, failed' : 0);
-      my ($it, $rs);
+      my ($it, $got_rs);
       if (eval {
         local $SIG{'__DIE__'} = sub {
-          $rs = $/;
+          $got_rs = $/;
           # and continue to usual die handling
         };
         $it = File::Locate::Iterator->new (database_file => $filename,
@@ -418,11 +417,10 @@ if ($] >= 5.008) {
       }
       like ($got_err, "/$want_err/",
             "$name, mmap_used=$mmap_used");
-      is ($rs, $orig_RS,
+      is ($got_rs, $orig_RS,
           "$name, input record separator in __DIE__ handler");
     }
   }
-  is ($/, $orig_RS, 'input record separator unchanged');
 }
 
 #-----------------------------------------------------------------------------
@@ -443,5 +441,105 @@ SKIP: {
   undef $it2;
   is ($fm, undef, 'FileMap destroyed with iterators');
 }
+
+
+#------------------------------------------------------------------------------
+# database_str option
+
+{
+  my $str = "\0LOCATE02\0\0/hello\0\006/world\0";
+  my $it = File::Locate::Iterator->new (database_str => $str);
+  $str = '';
+  my $entry = $it->next;
+  is ($entry, '/hello', 'database_str unaffected by later str changes');
+}
+
+#------------------------------------------------------------------------------
+# database_str_ref option
+
+{
+  my $str = "\0LOCATE02\0\0/hello\0\006/world\0";
+  my $it = File::Locate::Iterator->new (database_str_ref => \$str);
+
+  { my $entry = $it->next;
+    is ($entry, '/hello', 'database_str_ref');
+  }
+  substr($str,-2,1) = "X";
+
+  { my $entry = $it->next;
+    is ($entry, '/hello/worlX', 'database_str_ref affected by str change');
+  }
+}
+
+#------------------------------------------------------------------------------
+# suffix
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = File::Locate::Iterator->new (database_str => $str,
+                                        suffix => '.pl');
+  is ($it->next, '/hello/world.pl');
+  is ($it->next, undef);
+  is ($it->next, undef);
+}
+
+#------------------------------------------------------------------------------
+# suffixes
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = File::Locate::Iterator->new (database_str => $str,
+                                        suffixes => ['.pm','.pl']);
+  is ($it->next, '/hello/world.pl');
+  is ($it->next, undef);
+  is ($it->next, undef);
+}
+
+#------------------------------------------------------------------------------
+# glob
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = File::Locate::Iterator->new (database_str => $str,
+                                        glob => '*.pl');
+  is ($it->next, '/hello/world.pl');
+  is ($it->next, undef);
+}
+
+#------------------------------------------------------------------------------
+# globs
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = File::Locate::Iterator->new (database_str => $str,
+                                        globs => ['*.pm','*.pl']);
+  is ($it->next, '/hello/world.pl');
+  is ($it->next, undef);
+}
+
+#------------------------------------------------------------------------------
+# regexp
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = File::Locate::Iterator->new (database_str => $str,
+                                        regexp => qr/\.pl/);
+  is ($it->next, '/hello/world.pl');
+  is ($it->next, undef);
+}
+
+#------------------------------------------------------------------------------
+# regexps
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = File::Locate::Iterator->new (database_str => $str,
+                                        regexps => [ qr/\.pm/, qr/\.pl/ ]);
+  is ($it->next, '/hello/world.pl');
+  is ($it->next, undef);
+}
+
+#------------------------------------------------------------------------------
+is ($/, $orig_RS, 'input record separator unchanged');
 
 exit 0;

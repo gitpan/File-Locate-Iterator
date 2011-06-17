@@ -23,9 +23,9 @@ use warnings;
 use Carp;
 
 # uncomment this to run the ### lines
-#use Smart::Comments;
+#use Devel::Comments;
 
-our $VERSION = 19;
+our $VERSION = 20;
 
 our %cache;
 
@@ -50,6 +50,7 @@ sub get {
     File::Map->VERSION('0.35'); # for binary handled properly, maybe
     require PerlIO::Layers;
     require Scalar::Util;
+    require Taint::Util;
 
     PerlIO::Layers::query_handle ($fh, 'mappable')
         or croak "Handle not mappable";
@@ -61,9 +62,17 @@ sub get {
     my $tell = tell($fh);
     if ($tell < 0) {
       # assume if tell() doesn't work then $fh is not mmappable, or in any
-      # case we don't know where the current position is to map
+      # case don't know where the current position is to map
       croak "Cannot tell() file position: $!";
     }
+
+    # # induce taint on the mmap -- seems to cause segvs though
+    # read $fh, $self->{'mmap'}, 0;
+    # use Devel::Peek;
+    # Dump ($self->{'mmap'});
+
+    # crib: must taint before mapping, doesn't work afterwards
+    Taint::Util::taint($self->{'mmap'});
 
     File::Map::map_handle ($self->{'mmap'}, $fh, '<', $tell);
     File::Map::advise ($self->{'mmap'}, 'sequential');
@@ -156,6 +165,11 @@ File::Locate::Iterator::FileMap -- shared mmaps for File::Locate::Iterator
 This is an internal part of C<File::Locate::Iterator>.  A FileMap object
 holds a file mmapped by C<File::Map> and will re-use it rather than mapping
 the same file a second time.
+
+This module shouldn't exist, since C<File::Map> is in a much better position
+to share read-only mmaps, and can do so across threads too.  Almost every
+read-only mmap will want to share.  Straightforward cases like an mmap of a
+whole file should definitely share.
 
 =head1 SEE ALSO
 

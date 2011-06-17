@@ -12,10 +12,10 @@ devel/bin-no-cc/cc
 devel/copy.pl
 devel/crlf.pl
 devel/croak-local.pl
-devel/File-Locate-Iterator-subfile.t
 devel/File/FnMatch/Regexp.pm
 devel/glob.pl
 devel/GlobRegexp.pm
+devel/handle.pl
 devel/iterator-simple.pl
 devel/iterator.pl
 devel/lib/Sys/Mmap/Object.pm
@@ -28,6 +28,7 @@ devel/mmap-overflow.pl
 devel/mmap-rv.pl
 devel/mmap-speed.pl
 devel/mmap-string.pl
+devel/mmap-taint.pl
 devel/mmap-zero.pl
 devel/mmap.pl
 devel/moose.pl
@@ -38,6 +39,7 @@ devel/run.pl
 devel/Shared.pm
 devel/speed.pl
 devel/stat.pl
+devel/taint.pl
 devel/wait-status.pl
 examples/iterator-pm.pl
 examples/iterator-simple.pl
@@ -49,7 +51,6 @@ inc/MyMakeMakerExtras.pm
 Iterator.xs
 lib/File/Locate/Iterator.pm
 lib/File/Locate/Iterator/FileMap.pm
-lib/File/Locate/Iterator/PP.pm
 lib/Iterator/Locate.pm
 lib/Iterator/Simple/Locate.pm
 lib/MooseX/Iterator/Locate.pm
@@ -61,6 +62,8 @@ README
 SIGNATURE
 t/File-Locate-Iterator-base64.t
 t/File-Locate-Iterator-qp.t
+t/File-Locate-Iterator-subfile.t
+t/File-Locate-Iterator-taint.t
 t/File-Locate-Iterator-weaken.t
 t/File-Locate-Iterator.t
 t/FileMap.t
@@ -80,7 +83,10 @@ t/samp.locatedb.quotedprint
 t/samp.locatedb.subfile
 t/samp.zeros
 t/Test/Weaken/ExtraBits.pm
+xt/0-examples-xrefs.t
 xt/0-META-read.t
+xt/0-no-debug-left-on.t
+xt/0-Test-ConsistentVersion.t
 xt/0-Test-DistManifest.t
 xt/0-Test-Pod.t
 xt/0-Test-YAML-Meta.t

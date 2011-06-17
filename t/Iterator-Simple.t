@@ -33,10 +33,10 @@ use lib 't';
 use MyTestHelpers;
 BEGIN { MyTestHelpers::nowarnings() }
 
-plan tests => 5;
+plan tests => 19;
 require Iterator::Simple::Locate;
 
-my $want_version = 19;
+my $want_version = 20;
 is ($Iterator::Simple::Locate::VERSION, $want_version, 'VERSION variable');
 is (Iterator::Simple::Locate->VERSION,  $want_version, 'VERSION class method');
 { ok (eval { Iterator::Simple::Locate->VERSION($want_version); 1 },
@@ -69,7 +69,7 @@ sub slurp_zeros {
 {
   require FindBin;
   require File::Spec;
-  my $samp_zeros      = File::Spec->catfile ($FindBin::Bin, 'samp.zeros');
+  my $samp_zeros    = File::Spec->catfile ($FindBin::Bin, 'samp.zeros');
   my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
   my $it = Iterator::Simple::Locate->new (database_file => $samp_locatedb);
   my @want = slurp_zeros ($samp_zeros);
@@ -78,6 +78,74 @@ sub slurp_zeros {
     push @got, $filename;
   }
   is_deeply (\@got, \@want, 'samp.locatedb');
+}
+
+#------------------------------------------------------------------------------
+# suffix
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Simple::Locate->new (database_str => $str,
+                                          suffix => '.pl');
+  is ($it->(), '/hello/world.pl');
+  is ($it->(), undef);
+  is ($it->(), undef);
+}
+
+#------------------------------------------------------------------------------
+# suffixes
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Simple::Locate->new (database_str => $str,
+                                          suffixes => ['.pm','.pl']);
+  is ($it->(), '/hello/world.pl');
+  is ($it->(), undef);
+  is ($it->(), undef);
+}
+
+#------------------------------------------------------------------------------
+# glob
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Simple::Locate->new (database_str => $str,
+                                          glob => '*.pl');
+  is ($it->(), '/hello/world.pl');
+  is ($it->(), undef);
+}
+
+#------------------------------------------------------------------------------
+# globs
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Simple::Locate->new (database_str => $str,
+                                          globs => ['*.pm','*.pl']);
+  is ($it->(), '/hello/world.pl');
+  is ($it->(), undef);
+}
+
+#------------------------------------------------------------------------------
+# regexp
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Simple::Locate->new (database_str => $str,
+                                          regexp => qr/\.pl/);
+  is ($it->(), '/hello/world.pl');
+  is ($it->(), undef);
+}
+
+#------------------------------------------------------------------------------
+# regexps
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = Iterator::Simple::Locate->new (database_str => $str,
+                                          regexps => [ qr/\.pm/, qr/\.pl/ ]);
+  is ($it->(), '/hello/world.pl');
+  is ($it->(), undef);
 }
 
 exit 0;

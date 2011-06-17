@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Locate-Iterator
-version:            19
+version:            20
 abstract:           Read "locate" database file with an iterator.
 author:
     - Kevin Ryde <user42@zip.com.au>
@@ -14,6 +14,8 @@ requires:
     constant::defer:  0
     File::FnMatch:    0
     perl:             5.006
+    Scalar::Util:     0
+    Taint::Util:      0
     Test::More:       0
 resources:
     homepage:  http://user42.tuxfamily.org/file-locate-iterator/index.html
@@ -22,9 +24,10 @@ no_index:
     directory:
         - t
         - inc
+        - xt
         - devel
         - examples
-generated_by:       ExtUtils::MakeMaker version 6.55_02
+generated_by:       ExtUtils::MakeMaker version 6.56
 meta-spec:
     url:      http://module-build.sourceforge.net/META-spec-v1.4.html
     version:  1.4
@@ -38,8 +41,10 @@ optional_features:
             IO::String:         0
             Perl6::Slurp:       0
             PerlIO:             0
+            PerlIO::Layers:     0
             Pod::Simple::HTML:  0
             Scalar::Util:       0
+            Smart::Comments:    0
             Sys::Mmap:          0
             Text::Glob:         0
             warnings::unused:   0
@@ -56,14 +61,14 @@ optional_features:
             Iterator:          0
             Iterator::Simple:  0
             MooseX::Iterator:  0
-            Scalar::Util:      0
+            PerlIO::Layers:    0
     maximum_tests:
         description:  Have "make test" do as much as possible.
         requires:
             Parse::CPAN::Meta:   0
+            Taint::Util:         0
             Test::DistManifest:  0
             Test::Pod:           1.00
-            Test::Synopsis:      0
             Test::Weaken:        3.002
             Test::YAML::Meta:    0.15
             YAML:                0
@@ -71,5 +76,5 @@ optional_features:
             YAML::Tiny:          0
             YAML::XS:            0
 recommends:
-    File::Map:     0.35
-    Scalar::Util:  0
+    File::Map:       0.24
+    PerlIO::Layers:  0

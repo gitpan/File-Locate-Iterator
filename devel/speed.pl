@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2009, 2010 Kevin Ryde
+# Copyright 2009, 2010, 2011 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -21,29 +21,36 @@ use 5.006;
 use strict;
 use warnings;
 use Devel::TimeThis;
-use File::Locate;
 use File::Locate::Iterator;
 
 my $database = '/var/cache/locate/locatedb';
 
 # Run on shortened locatedb.
-# {
-#   my $full_database = $database;
-#   $database = '/tmp/x.locatedb';
-#   system("locate --database=$full_database '*' | head -30000 | /usr/lib/locate/frcode >$database && ls -l $database") == 0
-#             or die;
-# }
+{
+  $ENV{'PATH'} =~ /(.*)/ and $ENV{'PATH'} = $1; # untaint PATH
+  my $full_database = $database;
+  $database = '/tmp/x.locatedb';
+  system("locate --database=$full_database '*' | head -100000 | /usr/lib/locate/frcode >$database && ls -l $database") == 0
+    or die;
+}
+my $str = do { my $fh; open $fh, '<', $database or die; local $/; <$fh> };
 
 {
+  require File::Locate;
   my $t = Devel::TimeThis->new('Callback all');
   File::Locate::locate ("*", $database, sub { });
 }
 {
+  require File::Locate;
   my $t = Devel::TimeThis->new('Callback no match');
   File::Locate::locate ('fdsjkfjsdk', $database, sub {});
 }
+print "done callback\n";
 
-foreach my $method ('fh', 'mmap') {
+foreach my $method (
+                    'fh',
+                    'mmap',
+                   ) {
   my $use_mmap = ($method eq 'mmap');
   {
     my $t = Devel::TimeThis->new("Iterator $method, all");
@@ -58,6 +65,20 @@ foreach my $method ('fh', 'mmap') {
                                           use_mmap => $use_mmap);
     while (defined ($it->next)) { }
   }
+  print "done $method\n";
 }
+
+{
+  my $t = Devel::TimeThis->new("Iterator str_ref, all");
+  my $it = File::Locate::Iterator->new (database_str_ref => \$str);
+  while (defined ($it->next)) { }
+}
+{
+  my $t = Devel::TimeThis->new("Iterator str_ref, no match");
+  my $it = File::Locate::Iterator->new (database_str_ref => \$str,
+                                        regexp => qr/^$/);
+  while (defined ($it->next)) { }
+}
+
 
 exit 0;

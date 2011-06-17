@@ -32,6 +32,9 @@ BEGIN {
   $] >= 5.008
     or plan skip_all => 'need perl 5.008 for multi-arg pipe open';
 
+  # untaint PATH
+  $ENV{'PATH'} =~ /(.*)/ and $ENV{'PATH'} = $1;
+
   my $locate_help = `locate --help`;
   (defined $locate_help && $locate_help =~ /--null/)
     or plan skip_all => 'locate program not available or no --null option';
@@ -44,7 +47,7 @@ BEGIN {
   plan tests => 4;
 }
 
-my $count_limit = ($ENV{'FILE_LOCATE_ITERATOR_T_COUNT_LIMIT'} || 5000);
+my $count_limit = ($ENV{'FILE_LOCATE_ITERATOR_T_COUNT_LIMIT'} || 500);
 
 foreach my $use_mmap (0, 'if_possible') {
  SKIP: {

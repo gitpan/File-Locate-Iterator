@@ -16,6 +16,11 @@ You should have received a copy of the GNU General Public License along
 with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
+Version 20, June 2011
+    - new database_str_ref option
+    - taint mmap and XS cases the same as pure perl file reads
+    - MooseX fix regexp/glob/suffix options to actually restrict returns
+
 Version 19, February 2011
     - tests fix for File::Map version required
 

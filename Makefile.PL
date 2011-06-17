@@ -44,12 +44,21 @@ if ($want_xs && $] < 5.010) {
   $want_xs = 0
 }
 if ($want_xs) {
-  print STDERR "XS used by default.  If you don't have a compiler or the .xs
-doesn't work then disable with
+  print STDERR "XS enabled by default.
+If you don't have a compiler or the .xs doesn't work then disable with
     perl Makefile.PL MY_WITHOUT_XS=1
 "
 }
 
+
+my %file_map_optional
+  = ('File::Map'=> '0.24',   # version 0.24 for no prototypes
+     'PerlIO::Layers' => 0,  # for FileMap bits, required by File::Map too
+    );
+my %file_map_deps
+  = ('Scalar::Util' => 0, # for FileMap bits
+     'Taint::Util'     => 0, # for FileMap bits
+    );
 
 MyMakeMakerExtras::WriteMakefile
   (NAME         => 'File::Locate::Iterator',
@@ -58,10 +67,10 @@ MyMakeMakerExtras::WriteMakefile
    AUTHOR       => 'Kevin Ryde <user42@zip.com.au>',
    LICENSE      => 'gpl',
    SIGN         => 1,
-   PREREQ_PM    => {
-                    'constant::defer' => 0,
-                    'File::FnMatch'   => 0,
-                    'Test::More'      => 0,
+   PREREQ_PM    => { 'constant::defer' => 0,
+                     'File::FnMatch'   => 0,
+                     'Test::More'      => 0, # for tests only
+                     %file_map_deps
                    },
    MIN_PERL_VERSION => '5.006',
 
@@ -76,8 +85,7 @@ MyMakeMakerExtras::WriteMakefile
        'http://user42.tuxfamily.org/file-locate-iterator/index.html',
      },
      recommends =>
-     { 'File::Map' => 0.35, # 0.24 no prototypes, 0.35 binary stuff
-       'Scalar::Util' => 0, # for FileMap bits
+     { %file_map_optional
      },
      optional_features =>
      { maximum_examples =>
@@ -89,8 +97,7 @@ MyMakeMakerExtras::WriteMakefile
        },
        maximum_interoperation =>
        { description => 'Have maximum inter-operation with other modules (optional supported other stuff).',
-         requires => { 'File::Map' => '0.24', # version 0.24 for no prototypes
-                       'Scalar::Util' => 0, # for FileMap bits
+         requires => { %file_map_optional,
                        'Iterator' => 0,
                        'Iterator::Simple' => 0,
                        'MooseX::Iterator' => 0,
@@ -98,20 +105,20 @@ MyMakeMakerExtras::WriteMakefile
        },
        maximum_tests =>
        { description => 'Have "make test" do as much as possible.',
-         requires => { 'Test::Synopsis' => 0,
+         requires => { 'Taint::Util' => 0,
                        # version 3.002 for "tracked_types"
                        'Test::Weaken' => '3.002',
                      },
        },
        maximum_devel =>
        { description => 'Stuff used variously for development.',
-         requires => { 'Devel::TimeThis' => 0,
+         requires => { %file_map_optional,
+                       'Devel::TimeThis' => 0,
                        'File::Locate' => 0,
                        'IO::String' => 0,
                        'Perl6::Slurp' => 0,
                        'Scalar::Util' => 0,
                        'Text::Glob' => 0,
-                       'File::Map' => '0.24',
                        'PerlIO' => 0,
                        'Sys::Mmap' => 0,
                      },

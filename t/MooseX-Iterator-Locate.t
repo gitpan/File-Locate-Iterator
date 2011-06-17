@@ -31,14 +31,17 @@ use lib 't';
 use MyTestHelpers;
 BEGIN { MyTestHelpers::nowarnings() }
 
-plan tests => 172;
+# uncomment this to run the ### lines
+#use Devel::Comments;
+
+plan tests => 209;
 require MooseX::Iterator::Locate;
 
 
 #-----------------------------------------------------------------------------
 # VERSION
 
-my $want_version = 19;
+my $want_version = 20;
 is ($MooseX::Iterator::Locate::VERSION, $want_version, 'VERSION variable');
 is (MooseX::Iterator::Locate->VERSION,  $want_version, 'VERSION class method');
 { ok (eval { MooseX::Iterator::Locate->VERSION($want_version); 1 },
@@ -112,6 +115,31 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
   is ($it->next, $want[1]);
 }
 
+{
+  my $str = "\0LOCATE02\0\0/hello\0\006/world\0";
+  my $it = MooseX::Iterator::Locate->new (database_str => $str);
+  ok ($it->has_next);
+  is ($it->peek, '/hello');
+  is ($it->next, '/hello');
+  ok ($it->has_next);
+  is ($it->peek, '/hello/world');
+  is ($it->next, '/hello/world');
+  ok (! $it->has_next);
+  $it->reset;
+  ok ($it->has_next);
+  is ($it->peek, '/hello');
+}
+
+{
+  my $str = "\0LOCATE02\0\0/hello\0\006/world\0";
+  my $str_ref = \$str;
+  my $it = MooseX::Iterator::Locate->new (database_str_ref => $str_ref);
+  substr($str,-2,1) = 'X';
+  is ($it->next, '/hello');
+  is ($it->next, '/hello/worlX');
+  ok (! $it->has_next);
+}
+
 #-----------------------------------------------------------------------------
 # inheritance
 
@@ -129,6 +157,7 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
   my @want_names = (qw(database_file
                        database_fh
                        database_str
+                       database_str_ref
                        suffix
                        suffixes
                        glob
@@ -254,6 +283,75 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
           'new() via execute()');
   my $got = $it && $next && $next->execute($it);
   is ($got, $want[0], 'next() via execute()');
+}
+
+#------------------------------------------------------------------------------
+# glob
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = MooseX::Iterator::Locate->new (database_str => $str,
+                                          glob => '*.pl');
+  ### $it
+  is ($it->next, '/hello/world.pl');
+  ok (! $it->has_next);
+}
+
+#------------------------------------------------------------------------------
+# globs
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = MooseX::Iterator::Locate->new (database_str => $str,
+                                          globs => ['*.pl']);
+  is ($it->next, '/hello/world.pl');
+  ok (! $it->has_next);
+}
+
+#------------------------------------------------------------------------------
+# suffix
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = MooseX::Iterator::Locate->new (database_str => $str,
+                                          suffix => '.pl');
+  is ($it->next, '/hello/world.pl');
+  ok (! $it->has_next);
+}
+
+#------------------------------------------------------------------------------
+# suffixes
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = MooseX::Iterator::Locate->new (database_str => $str,
+                                          suffixes => ['.pm','.pl']);
+  is ($it->next, '/hello/world.pl');
+  ok (! $it->has_next);
+}
+
+#------------------------------------------------------------------------------
+# regexp
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = MooseX::Iterator::Locate->new (database_str => $str,
+                                          regexp => qr/\.pl/);
+  ### $it
+  is ($it->next, '/hello/world.pl');
+  ok (! $it->has_next);
+}
+
+#------------------------------------------------------------------------------
+# regexps
+
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $it = MooseX::Iterator::Locate->new (database_str => $str,
+                                          regexps => [ qr/\.pm/, qr/\.pl/ ]);
+  ### $it
+  is ($it->next, '/hello/world.pl');
+  ok (! $it->has_next);
 }
 
 exit 0;

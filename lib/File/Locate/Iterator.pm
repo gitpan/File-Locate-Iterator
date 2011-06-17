@@ -23,19 +23,173 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = 19;
-
 use DynaLoader;
 our @ISA = ('DynaLoader');
+
+our $VERSION = 20;
+
+# uncomment this to run the ### lines
+#use Devel::Comments;
+
+
 if (eval { __PACKAGE__->bootstrap($VERSION) }) {
   ### FLI next() from XS
 } else {
   ### FLI next() in perl, XS didn't load: $@
-  require File::Locate::Iterator::PP;
+
+  eval "#line ".(__LINE__+1)." \"".__FILE__."\"\n" . <<'HERE' or die;
+use strict;
+use warnings;
+use File::FnMatch;
+
+sub _UNEXPECTED_EOF {
+  my ($self) = @_;
+  undef $self->{'entry'};
+  croak 'Invalid database contents (unexpected EOF)';
+}
+sub _ERROR_READING {
+  my ($self) = @_;
+  undef $self->{'entry'};
+  croak 'Error reading database: ',$!;
+}
+sub _BAD_SHARE {
+  my ($self, $sharelen) = @_;
+  undef $self->{'entry'};
+  croak "Invalid database contents (bad share length $sharelen)";
+}
+sub next {
+  my ($self) = @_;
+  ### FLI PP next()
+
+  my $sharelen = $self->{'sharelen'};
+  my $entry = $self->{'entry'};
+  my $regexp = $self->{'regexp'};
+  my $globs = $self->{'globs'};
+
+  if (my $mref = $self->{'mref'}) {
+    my $pos = $self->{'pos'};
+  MREF_LOOP: for (;;) {
+      #### pos in map: sprintf('%#x', $pos)
+      if ($pos >= length ($$mref)) {
+        undef $self->{'entry'};
+        return; # end of file
+      }
+
+      my ($adjshare) = unpack 'c', substr ($$mref, $pos++, 1);
+      if ($adjshare == -128) {
+        #### 2byte pos: sprintf('%#X', $pos)
+        # print ord(substr ($$mref,$pos,1)),"\n";
+        # print ord(substr ($$mref,$pos+1,1)),"\n";
+
+        if ($pos+2 > length ($$mref)) { goto &_UNEXPECTED_EOF; }
+
+        # for perl 5.10 up could use 's>' for signed 16-bit big-endian,
+        # instead of getting unsigned and stepping down
+        ($adjshare) = unpack 'n', substr ($$mref, $pos, 2);
+        if ($adjshare >= 32768) { $adjshare -= 65536; }
+
+        $pos += 2;
+      }
+      ### $adjshare
+      $sharelen += $adjshare;
+      # print "share now $sharelen\n";
+      if ($sharelen < 0 || $sharelen > length($entry)) {
+        push @_, $sharelen; goto &_BAD_SHARE;
+      }
+
+      my $end = index ($$mref, "\0", $pos);
+      # print "$pos to $end\n";
+      if ($end < 0) { goto &_UNEXPECTED_EOF; }
+
+      $entry = (substr($entry,0,$sharelen)
+                . substr ($$mref, $pos, $end-$pos));
+      $pos = $end + 1;
+
+      if ($regexp) {
+        last if $entry =~ $regexp;
+      } elsif (! $globs) {
+        last;
+      }
+      if ($globs) {
+        foreach my $glob (@$globs) {
+          last MREF_LOOP if File::FnMatch::fnmatch($glob,$entry)
+        }
+      }
+    }
+    $self->{'pos'} = $pos;
+
+  } else {
+    local $/ = "\0"; # readline() to \0
+
+    my $fh = $self->{'fh'};
+    ### pos tell(fh): sprintf('%#x',tell($fh))
+  IO_LOOP: for (;;) {
+      my $adjshare;
+      unless (my $got = read $fh, $adjshare, 1) {
+        if (defined $got) {
+          undef $self->{'entry'};
+          return; # EOF
+        }
+        goto &_ERROR_READING;
+      }
+
+      ($adjshare) = unpack 'c', $adjshare;
+      if ($adjshare == -128) {
+        my $got = read $fh, $adjshare, 2;
+        if (! defined $got) { goto &_ERROR_READING; }
+        if ($got != 2) { goto &_UNEXPECTED_EOF; }
+
+        # for perl 5.10 up could use 's>' for signed 16-bit big-endian
+        # pack, instead of getting unsigned and stepping down
+        ($adjshare) = unpack 'n', $adjshare;
+        if ($adjshare >= 32768) { $adjshare -= 65536; }
+      }
+      ### $adjshare
+
+      $sharelen += $adjshare;
+      ### share now: $sharelen
+      if ($sharelen < 0 || $sharelen > length($entry)) {
+        push @_, $sharelen; goto &_BAD_SHARE;
+      }
+
+      my $part;
+      {
+        # perlfunc.pod of 5.10.0 for readline() says you can clear $!
+        # then check it afterwards for an error indication, but that's
+        # wrong, $! ends up set to EBADF when filling the PerlIO buffer,
+        # which means if the readline crosses a 1024 byte boundary
+        # (something in attempting a fast gets then falling back ...)
+
+        $part = readline $fh;
+        if (! defined $part) { goto &_UNEXPECTED_EOF; }
+
+        ### part: $part
+        chomp $part or goto &_UNEXPECTED_EOF;
+      }
+
+      $entry = substr($entry,0,$sharelen) . $part;
+
+      if ($regexp) {
+        last if $entry =~ $regexp;
+      } elsif (! $globs) {
+        last;
+      }
+      if ($globs) {
+        foreach my $glob (@$globs) {
+          last IO_LOOP if File::FnMatch::fnmatch($glob,$entry)
+        }
+      }
+    }
+  }
+
+  $self->{'sharelen'} = $sharelen;
+  return ($self->{'entry'} = $entry);
 }
 
-# uncomment this to run the ### lines
-#use Smart::Comments;
+1;
+
+HERE
+}
 
 use constant default_use_mmap => 'if_sensible';
 my $header = "\0LOCATE02\0";
@@ -167,8 +321,11 @@ sub new {
   ### regexp: $self->{'regexp'}
   ### globs : $self->{'globs'}
 
-  if (defined (my $str = $options{'database_str'})) {
-    $self->{'mref'} = \$str;
+  if (defined (my $ref = $options{'database_str_ref'})) {
+    $self->{'mref'} = $ref;
+
+  } elsif (defined $options{'database_str'}) {
+    $self->{'mref'} = \$options{'database_str'};
 
   } else {
     my $use_mmap = (defined $options{'use_mmap'}
@@ -337,18 +494,66 @@ database.
     /bin/bash
     /bin/cat
 
-Locate databases normally hold filenames as a way of finding files faster
-than churning through directories on the filesystem.  Optional glob, suffix
-and regexp options on the iterator can restrict the entries returned.
+Locate databases normally hold filenames as a way of finding files by name
+faster than churning through all directories.  Optional glob, suffix and
+regexp options on the iterator can restrict the entries returned.
+
+See F<examples/native.pl> in the File-Locate-Iterator sources for a simple
+sample read, or for a F<examples/mini-locate.pl> whole locate program
+simulation.
 
 Only "LOCATE02" format files are supported, per current versions of GNU
 C<locate>, not the previous "slocate" format.
 
 Iterators from this module are stand-alone, they don't need any of the
-various iterator frameworks.  See L<Iterator::Locate>,
+various Perl iterator frameworks.  But see L<Iterator::Locate>,
 L<Iterator::Simple::Locate> and L<MooseX::Iterator::Locate> to inter-operate
-with those frameworks, in their style or with ways to grep, map and
-otherwise manipulate the iteration.
+with those frameworks, with ways to grep, map and otherwise manipulate
+iterations.
+
+=head2 Forks and Threads
+
+If an iterator using a file handle is cloned to a new thread or a process
+level C<fork()> then generally it can be used by the parent or the child but
+not both.  The underlying file descriptor position is shared by parent and
+child, so when one of them reads it upsets the position for the other.  This
+sort of thing affects almost all code working with file handles across
+C<fork> and threads.  Perhaps some thread C<CLONE> code could let threads
+work correctly (if slower), but a C<fork> is probably doomed.
+
+Iterators using C<mmap> work correctly for both forks and threads, except
+that the C<if_sensible> size calculation and sharing is not thread-aware
+beyond the mmaps existing when the thread is spawned.  C<File::Map> knows
+the mmaps across all threads, but won't reveal them.
+
+=head2 Taint Mode
+
+In taint mode (see L<perlsec/Taint Mode>) entries from a file or file handle
+are always tainted, the same as other file input.  Taintedness of a
+C<database_str> content string propagates to the entries.
+
+For C<database_str_ref> the initial taintedness propagates.  In the unlikely
+event you untaint it during iteration the entries remain tainted because
+they depend or may depend on the data back from when the input was tainted.
+A C<rewind()> will reset the taintedness though.
+
+For reference, taint mode is only a small slowdown for the XS iterator code,
+and usually (it seems) only a little more for the pure perl.
+
+=head2 Other Notes
+
+The locate database format is only designed to be read forwards, hence no
+C<prev> method on the iterator.  The start of a previous record can't be
+distinguished by its content, and the "front coding" means the state at a
+given point may depend on records an arbitrary distance back too.  A "tell"
+which gave file position plus state would be possible, though perhaps a
+"clone" of the whole iterator would be more use.
+
+On some systems C<mmap> may be a bit too effective, giving a process more of
+the CPU than other processes which make periodic C<read> system calls.  This
+is a matter of OS scheduling, but you might have to turn down the C<nice> or
+C<ionice> if doing a lot of mmapped work (see L<nice(1)>, L<ionice(1)>,
+L<perlfunc/setpriority>, L<ioprio_set(2)>).
 
 =head1 FUNCTIONS
 
@@ -367,21 +572,31 @@ optional key/value pairs can be given,
 
 =item C<database_fh> (handle ref)
 
-The file to read, either as filename or file handle.  The default is the
-C<default_database_file> below.
+The file to read, either as filename or file handle.  The default file is
+the C<default_database_file()> below.
 
     $it = File::Locate::Iterator->new
             (database_file => '/foo/bar.db');
 
-A filehandle is read with the usual C<PerlIO>, so it can use layers and come
-from various sources, but it should be in binary mode.
+A filehandle is read with the usual C<PerlIO> so it can use layers and come
+from various sources, but it should be in binary mode (see
+L<perlfunc/binmode> and L<perlio/:raw>).
 
 =item C<database_str> (string)
+
+=item C<database_str_ref> (ref to string)
 
 The database contents to read in the form of a byte string.
 
     $it = File::Locate::Iterator->new
       (database_str => "\0LOCATE02\0\0/hello\0\006/world\0");
+
+A C<database_str> ends up copied into the iterator.  C<database_str_ref> is
+a scalar ref to the string and is not copied.
+
+    my $str = "\0LOCATE02\0\0/hello\0\006/world\0";
+    $it = File::Locate::Iterator->new
+      (database_str_ref => \$str);
 
 =item C<suffix> (string)
 
@@ -405,23 +620,23 @@ given glob(s) or regexp(s).  For example,
 If multiple patterns or suffixes are given then matches of any are returned.
 
 Globs are in the style of the C<locate> program which means C<fnmatch> with
-no options (see L<File::FnMatch>) and the pattern matching the full entry if
-there's wildcards ("*", "?" or "[") or any part if a fixed string.
+no options (see L<File::FnMatch>) and the pattern match of the full entry if
+there's wildcards ("*", "?" or "[") or of any part if a fixed string.
 
     glob => '*.c'  # .c files, no .cxx files
-    glob => '.c'   # fixed str, .cxx matches
+    glob => '.c'   # fixed str, .cxx matches too
 
 Globs should be byte strings (not wide chars) since that's how the database
 entries are handled, and suspect C<fnmatch> has no notion of charset coding
-its strings and patterns.
+for its strings and patterns.
 
 =item C<use_mmap> (string, default "if_sensible")
 
 Whether to use C<mmap> to access the database.  This is fast and
-resource-efficient when it can be done.  To use mmap you must have the
+resource-efficient when available.  To use mmap you must have the
 C<File::Map> module, the file must fit in available address space, and for a
 C<database_fh> handle there mustn't be any transforming C<PerlIO> layers.
-The options are
+The C<use_mmap> choices are
 
     undef           \
     "default"       | use mmap if sensible
@@ -434,7 +649,7 @@ The options are
 Setting C<default>, C<undef> or omitted means C<if_sensible>.
 C<if_sensible> uses mmap if available, and the file size is reasonable, and
 for C<database_fh> if it isn't already using an C<:mmap> layer.
-C<if_possible> uses mmap whenever it can be done.
+C<if_possible> uses mmap whenever it can be done, without those qualifiers.
 
     $it = File::Locate::Iterator->new
             (use_mmap => 'if_possible');
@@ -443,18 +658,21 @@ When multiple iterators access the same file they share the mmap.  The size
 check for C<if_sensible> counts space in all C<File::Locate::Iterator>
 mappings and won't go beyond 1/5 of available data space, which is assumed
 to be a quarter of the wordsize, so for a 32-bit system a total at most
-200Mb.  C<if_possible> and C<if_sensible> will only act on ordinary files
+200Mb.  C<if_possible> and C<if_sensible> will only mmap ordinary files
 because generally the file size on char specials is not reliable.
 
 =back
 
-=item C<< $filename = File::Locate::Iterator->default_database_file >>
+=item C<< $filename = File::Locate::Iterator->default_database_file() >>
 
 Return the default database file used for C<new> above.  This is meant to be
 the same as the C<locate> program uses and currently means
-C<$ENV{'LOCATE_PATH'}> if set, otherwise F</var/cache/locate/locatedb>.  In
-the future it might be possible to check how C<findutils> has been
-installed.
+
+    $ENV{'LOCATE_PATH'}            if that env var set
+    /var/cache/locate/locatedb     otherwise
+
+Perhaps in the future it might be possible to check how C<findutils> has
+been installed rather than assuming F</var/cache/locate/>.
 
 =back
 
@@ -474,46 +692,19 @@ or
 
     while (my ($filename) = $it->next) ...
 
-The return is a byte string since it's normally a filename and as of Perl
-5.10 filenames are handled as byte strings.
+The return is a byte string since it's normally a filename and Perl handles
+filenames as byte strings.
 
 =item C<< $it->rewind >>
 
 Rewind C<$it> back to the start of the database.  The next C<$it-E<gt>next>
 call will return the first entry.
 
-This is only possible when C<seek> works on the underlying database file or
-handle, meaning a plain file or something else seekable, including seekable
-PerlIO layers.
+This is only possible when the underlying database file or handle is
+seekable, ie. C<seek()> works, which will usually mean a plain file, or
+PerlIO layers with seek support.
 
 =back
-
-=head1 OTHER NOTES
-
-On some systems C<mmap> may be a bit too effective, giving a process more of
-the CPU than other processes which make periodic system calls.  This is an
-OS scheduling matter, but you might have to turn down the C<nice> or
-C<ionice> if doing a lot of mmapped work.
-
-If an iterator using a file handle is cloned by a C<fork> or new thread then
-generally it can be used by the parent or the child, but not both.  If the
-handle is anything with a file descriptor then the descriptor file position
-is shared by parent and child, so when one of them reads it upsets the
-position seen by the other.  This problem affects almost all code working
-with file handles across C<fork> or threads.  Some C<CLONE> code might let
-threads work correctly (though more slowly), but a C<fork> is probably
-doomed.
-
-Iterators using C<mmap> work correctly for both forks and threads, except
-the mmap C<if_sensible> size calculation and sharing is not thread-aware
-beyond the mmaps existing when the thread is spawned.  Perhaps this will
-improve in the future.
-
-The locate database format is only designed to be read forwards, hence no
-C<prev> method on the iterator.  It's not possible to read backwards
-generally, since the start of a record can't be distinguished by its
-content, and the "front coding" means it may need data from various other
-records an arbitrary distance yet further back.
 
 =head1 ENVIRONMENT VARIABLES
 
@@ -538,26 +729,28 @@ Default locate database, if C<LOCATE_PATH> environment variable not set.
 =head1 OTHER WAYS TO DO IT
 
 C<File::Locate> reads a locate database with callbacks instead.  Whether you
-prefer callbacks or an iterator is a matter of style.  Iterators let you
-write your own loop and have multiple searches in progress simultaneously.
+want callbacks or an iterator is a matter of personal preference.  Iterators
+let you write your own loop and have multiple searches in progress
+simultaneously.
 
 The speed of an iterator is about the same as callbacks when
-C<File::Locate::Iterator> is built with its XSUB code (requires Perl 5.10.0
-or higher currently).
+C<File::Locate::Iterator> is built with its XSUB code (which requires Perl
+5.10.0 or higher currently).
 
 Iterators are good for cooperative coroutining like C<POE> or C<Gtk> where
 state must be held in some sort of variable to be progressed by calls from
 the main loop.  Note that C<next()> blocks on reading from the database, so
-the database generally should be a plain file rather than a socket or
+the database should generally be a plain file rather than a socket or
 something, so as not to hold up a main loop.
 
-If you have the recommended mmap C<File::Map> module then iterators share an
+If you have the recommended C<File::Map> module then iterators share an
 C<mmap> of the database file.  Otherwise currently each holds a separate
 open handle to the database which means a file descriptor and PerlIO
-buffering per iterator.  Sharing a handle and making each one seek to its
+buffering per iterator.  Sharing a handle and making each seek to its
 desired position would be possible, but a seek drops buffered data and so
-would go slower.  Some PerlIO trickery might transparently share an fd and
-keep buffered blocks from multiple file positions.
+would go slower.  Some C<PerlIO> or C<IO::Handle> trickery might
+transparently share an fd and keep buffered blocks from multiple file
+positions.
 
 =head1 SEE ALSO
 

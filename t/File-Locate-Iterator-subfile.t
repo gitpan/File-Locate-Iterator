@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2009, 2010 Kevin Ryde
+# Copyright 2009, 2010, 2011 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -20,19 +20,17 @@
 
 # Exercise reading from a PerlIO::subfile, if that module available.
 # Including a rewind in that subfile.
-#
-# Doesn't work with PERLIO=crlf.  Should it?
-
 
 use 5.006;
 use strict;
 use warnings;
 use Test::More;
 
-# no need to preload
-# eval { require PerlIO::subfile }
-#   or plan skip_all => "PerlIO::subfile not available -- $!";
+# no need to preload layers, this only to check availability
+eval { require PerlIO::subfile }
+  or plan skip_all => "PerlIO::subfile not available -- $!";
 
+# Creating samp.locatedb.subfile file ...
 # {
 #   open my $fh, '<', 't/samp.locatedb.offset' or die;
 #   my $contents = do { local $/ = undef; <$fh> }; # slurp
@@ -52,10 +50,10 @@ my $samp_locatedb_subfile
   = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb.subfile');
 diag "File samp_locatedb_subfile=$samp_locatedb_subfile";
 
-# if PerlIO not available then this can fail, or at least when mangling it
-# with Test::Without::Module
-eval { open my $fh, '<:subfile(start=87,end=3770)', $samp_locatedb_subfile }
-  or plan skip_all => "skip, cannot open <:subfile(start=87,end=3770) -- $!";
+# if PerlIO not available then this can fail, at least when mangling with
+# Test::Without::Module
+eval { open my $fh, '< :raw :subfile(start=87,end=3770)', $samp_locatedb_subfile }
+  or plan skip_all => "skip, cannot open < :raw :subfile(start=87,end=3770) -- $!";
 
 use lib 't';
 use MyTestHelpers;
@@ -94,11 +92,15 @@ sub no_inf_loop {
 my $orig_RS = $/;
 
 {
-  open my $fh, '<:subfile(start=87,end=3770)', $samp_locatedb_subfile
+  open my $fh, '<', $samp_locatedb_subfile
     or die "Oops, cannot open again with :subfile: $!";
+  binmode $fh 
+    or die "Oops, binmode(): $!";
+  binmode $fh, ':subfile(start=87,end=3770)'
+    or die "Oops, cannot binmode(:subfile): $!";
   # binmode ($fh) or die "Oops, cannot set binmode on subfile: $!";;
   if (PerlIO->can('get_layers')) {
-    diag "Layers: ", PerlIO::get_layers($fh, details=>1);
+    diag "Layers: ", join(', ', map {defined $_ ? $_ : '[undef]'} PerlIO::get_layers($fh, details=>1));
   }
 
   my $it = File::Locate::Iterator->new (database_fh => $fh);
@@ -126,8 +128,9 @@ my $orig_RS = $/;
 
 # with 'glob'
 {
-  open my $fh, '<:subfile(start=87,end=3770)', $samp_locatedb_subfile
+  open my $fh, '< :raw :subfile(start=87,end=3770)', $samp_locatedb_subfile
     or die "Oops, cannot open again with :subfile: $!";
+
   my $it = File::Locate::Iterator->new (database_fh => $fh,
                                         glob => '*.c');
   my $noinfloop = no_inf_loop("$samp_locatedb_subfile with *.c");

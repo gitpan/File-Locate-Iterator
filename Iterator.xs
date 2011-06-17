@@ -303,7 +303,9 @@ CODE:
         MATCH(IO_LOOP_END);
       }
     IO_LOOP_END:
-      ;
+      /* taint the same as other reads from a file, and in particular the
+         same as from the pure-perl reads */
+      SvTAINTED_on(entry);
     }
     if (at_eof) {
       sv_setpv (entry, NULL);
