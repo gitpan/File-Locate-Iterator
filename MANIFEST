@@ -76,14 +76,15 @@ t/MooseX-Iterator-Locate-subclass.t
 t/MooseX-Iterator-Locate-weaken.t
 t/MooseX-Iterator-Locate.t
 t/MyTestHelpers.pm
+t/samp.empty
 t/samp.locatedb
 t/samp.locatedb.base64
 t/samp.locatedb.offset
 t/samp.locatedb.quotedprint
 t/samp.locatedb.subfile
 t/samp.zeros
-t/Test/Weaken/ExtraBits.pm
 xt/0-examples-xrefs.t
+xt/0-file-is-part-of.t
 xt/0-META-read.t
 xt/0-no-debug-left-on.t
 xt/0-Test-ConsistentVersion.t

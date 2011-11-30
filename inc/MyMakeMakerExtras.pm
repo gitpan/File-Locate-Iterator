@@ -82,31 +82,31 @@ sub strip_comments {
 sub _meta_merge_shared_tests {
   my ($opts) = @_;
   if (-e 'xt/0-Test-Pod.t') {
-    _meta_merge_req_add (_meta_merge_maximum_tests($opts),
+    _meta_merge_req_add (_meta_merge_maximum_devel($opts),
                          'Test::Pod' => '1.00');
   }
   if (-e 'xt/0-Test-DistManifest.t') {
-    _meta_merge_req_add (_meta_merge_maximum_tests($opts),
+    _meta_merge_req_add (_meta_merge_maximum_devel($opts),
                          'Test::DistManifest' => 0);
   }
   if (-e 'xt/0-Test-Synopsis.t') {
-    _meta_merge_req_add (_meta_merge_maximum_tests($opts),
+    _meta_merge_req_add (_meta_merge_maximum_devel($opts),
                          'Test::Synopsis' => 0);
   }
   if (-e 'xt/0-Test-YAML-Meta.t') {
-    _meta_merge_req_add (_meta_merge_maximum_tests($opts),
+    _meta_merge_req_add (_meta_merge_maximum_devel($opts),
                          'Test::YAML::Meta' => '0.15');
   }
   if (-e 'xt/0-META-read.t') {
     if (_min_perl_version_lt ($opts, 5.00307)) {
-      _meta_merge_req_add (_meta_merge_maximum_tests($opts),
+      _meta_merge_req_add (_meta_merge_maximum_devel($opts),
                            'FindBin' => 0);
     }
     if (_min_perl_version_lt ($opts, 5.00405)) {
-      _meta_merge_req_add (_meta_merge_maximum_tests($opts),
+      _meta_merge_req_add (_meta_merge_maximum_devel($opts),
                            'File::Spec' => 0);
     }
-    _meta_merge_req_add (_meta_merge_maximum_tests($opts),
+    _meta_merge_req_add (_meta_merge_maximum_devel($opts),
                          'YAML'              => 0,
                          'YAML::Syck'        => 0,
                          'YAML::Tiny'        => 0,
@@ -131,7 +131,8 @@ sub _meta_merge_shared_devel {
                        'warnings::unused' => 0);
   _meta_merge_req_add (_meta_merge_maximum_devel($opts),
                        # used a lot
-                       'Smart::Comments' => 0);
+                       'Smart::Comments' => 0,
+                       'Devel::Comments' => 0);
   if (-e 'inc/my_pod2html') {
     if (_min_perl_version_lt ($opts, 5.009003)) {
       _meta_merge_req_add (_meta_merge_maximum_devel($opts),
@@ -284,6 +285,10 @@ HERE
   $post .= <<'HERE';
 pc:
 HERE
+  # ------ pc: test vars ------
+  # the "." obscures it from MyExtractUse.pm
+  $post .= "\t-\$(PERLRUNINST) -e 'use "."Test::Vars; all_vars_ok()'\n";
+
   # ------ pc: podcoverage ------
   foreach (@{$my_options{'MyMakeMakerExtras_Pod_Coverage'}}) {
     my $class = $_;
@@ -358,7 +363,7 @@ check-copyright-years:
 	  exit $$result)
 
 check-spelling:
-	if find . -type f | egrep -v '(Makefile|dist-deb)' | xargs egrep --color=always -nHi '[g]lpyh|[r]ectanglar|[a]vailabe|[g]rabing|[c]usor|[r]efering|[w]riteable|[n]ineth|\b[o]mmitt?ed|[o]mited|[$$][rd]elf|[r]equrie|[n]oticable|[c]ontinous|[e]xistant|[e]xplict|[a]gument|[d]estionation|\b[t]he the\b|\b[i]n in\b|\b[tw]hen then\b|\b[n]ote sure\b'; \
+	if find . -type f | egrep -v '(Makefile|dist-deb)' | xargs egrep --color=always -nHi '\b[t]o to\b|[t]ranpose|[a]djustement|[g]lpyh|[r]ectanglar|[a]vailabe|[g]rabing|[c]usor|[r]efering|[w]riteable|[n]ineth|\b[o]mmitt?ed|[o]mited|[$$][rd]elf|[r]equrie|[n]oticable|[c]ontinous|[e]xistant|[e]xplict|[a]gument|[d]estionation|\b[t]he the\b|\b[w]ith with\b|\b[i]n in\b|\b[tw]hen then\b|\b[n]ote sure\b|[c]orrespondance|[s]prial'; \
 	then false; else true; fi
 HERE
 
@@ -447,7 +452,7 @@ lintian-source:
 	mv -T $(DISTVNAME) $(DEBNAME)-$(VERSION); \
 	dpkg-source -b $(DEBNAME)-$(VERSION) \
 	               $(DEBNAME)_$(VERSION).orig.tar.gz; \
-	lintian -I -i --suppress-tags empty-debian-diff *.dsc; \
+	lintian -I -i --suppress-tags empty-debian-diff,debian-rules-uses-deprecated-makefile *.dsc; \
 	cd ..; \
 	rm -rf temp-lintian
 

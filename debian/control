@@ -36,12 +36,12 @@ Bugs: mailto:user42@zip.com.au
 
 Package: libfile-locate-iterator-perl
 Architecture: any
-Depends: perl (>= 5.6), libconstant-defer-perl, libfile-fnmatch-perl, libtaint-util-perl, libscalar-list-utils-perl | perl-modules (>= 5.8), ${perl:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Depends: perl (>= 5.6), libconstant-defer-perl, libfile-fnmatch-perl, libscalar-list-utils-perl | perl-modules (>= 5.8), ${perl:Depends}, ${misc:Depends}, ${shlibs:Depends}
 Recommends: libfile-map-perl (>= 0.35)
-Suggests: libiterator-perl, libiterator-simple-perl
+Suggests: libiterator-perl, libiterator-simple-perl, libmoosex-iterator-perl
 Description: Read a "locate" database file with an iterator
  File::Locate::Iterator reads a "locate" database file, similar to
  File::Locate, but done as an iterator rather than callbacks.
  .
- Optional support for Iterator or Iterator::Simple iterators is
- included, or the module can be used stand-alone.
+ The iteration is done stand-alone, or there's tie-in subclasses of
+ Iterator.pm, Iterator::Simple and MooseX::Iterator too.

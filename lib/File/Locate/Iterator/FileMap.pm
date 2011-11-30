@@ -25,7 +25,7 @@ use Carp;
 # uncomment this to run the ### lines
 #use Devel::Comments;
 
-our $VERSION = 20;
+our $VERSION = 21;
 
 our %cache;
 
@@ -47,10 +47,10 @@ sub get {
   ### cache get: "$fh, $key, size=".(-s $fh)
   return ($cache{$key} || do {
     require File::Map;
-    File::Map->VERSION('0.35'); # for binary handled properly, maybe
+    # File::Map->VERSION('0.35'); # for binary handled properly, maybe
+    File::Map->VERSION('0.38'); # for tainting
     require PerlIO::Layers;
     require Scalar::Util;
-    require Taint::Util;
 
     PerlIO::Layers::query_handle ($fh, 'mappable')
         or croak "Handle not mappable";
@@ -66,13 +66,16 @@ sub get {
       croak "Cannot tell() file position: $!";
     }
 
+    # File::Map 0.38 does tainting itself
+    #
     # # induce taint on the mmap -- seems to cause segvs though
     # read $fh, $self->{'mmap'}, 0;
     # use Devel::Peek;
     # Dump ($self->{'mmap'});
-
-    # crib: must taint before mapping, doesn't work afterwards
-    Taint::Util::taint($self->{'mmap'});
+    #
+    # # crib: must taint before mapping, doesn't work afterwards
+    # require Taint::Util;
+    # Taint::Util::taint($self->{'mmap'});
 
     File::Map::map_handle ($self->{'mmap'}, $fh, '<', $tell);
     File::Map::advise ($self->{'mmap'}, 'sequential');
@@ -154,7 +157,7 @@ sub _mmap_size_excessive {
 1;
 __END__
 
-=for stopwords mmaps FileMap mmapped Ryde
+=for stopwords mmap mmaps FileMap mmapped Ryde
 
 =head1 NAME
 

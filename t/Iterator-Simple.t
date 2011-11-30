@@ -36,7 +36,7 @@ BEGIN { MyTestHelpers::nowarnings() }
 plan tests => 19;
 require Iterator::Simple::Locate;
 
-my $want_version = 20;
+my $want_version = 21;
 is ($Iterator::Simple::Locate::VERSION, $want_version, 'VERSION variable');
 is (Iterator::Simple::Locate->VERSION,  $want_version, 'VERSION class method');
 { ok (eval { Iterator::Simple::Locate->VERSION($want_version); 1 },

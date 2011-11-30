@@ -29,9 +29,13 @@ BEGIN { MyTestHelpers::nowarnings() }
 eval { require Taint::Util; 1 }
   or plan skip_all => "due to Taint::Util not available -- $@";
 
-plan tests => 16;
+plan tests => 17;
 
 use File::Locate::Iterator;
+
+# uncomment this to run the ### lines
+#use Devel::Comments;
+
 
 #------------------------------------------------------------------------------
 # taint from a "database_file"
@@ -135,6 +139,46 @@ use File::Locate::Iterator;
     my $got_taint = Taint::Util::tainted($entry);
     ok (! $got_taint, "database_str_ref untainted");
   }
+}
+
+#------------------------------------------------------------------------------
+# check taint of an empty mmapped file doesn't affect future such mmaps
+
+{
+  require FindBin;
+  require File::Spec;
+  my $filename = File::Spec->catfile ($FindBin::Bin, 'samp.empty');
+
+  my $first_taint;
+  {
+    my $mmap;
+    eval {
+      require File::Map;
+      File::Map::map_file ($mmap, $filename);
+      1;
+    } or diag "No File::Map map_file() -- $@";
+    my $first_taint = Taint::Util::tainted($mmap);
+    diag "File::Map empty file taint is '$first_taint'";
+    ### $first_taint
+  }
+
+  eval {
+    File::Locate::Iterator->new (database_file => $filename,
+                                 use_mmap => 1);
+  };
+
+  my $second_taint;
+  {
+    my $mmap;
+    eval {
+      require File::Map;
+      File::Map::map_file ($mmap, $filename);
+    };
+    my $second_taint = Taint::Util::tainted($mmap);
+    ### $second_taint
+  }
+
+  is ($first_taint, $second_taint, "tainted() of File::Map empty unchanged");
 }
 
 exit 0;

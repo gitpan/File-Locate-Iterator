@@ -16,6 +16,9 @@ You should have received a copy of the GNU General Public License along
 with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
 
+Version 21, August 2011
+    - let File::Map 0.38 do tainting when applicable
+
 Version 20, June 2011
     - new database_str_ref option
     - taint mmap and XS cases the same as pure perl file reads

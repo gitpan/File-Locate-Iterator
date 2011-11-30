@@ -25,7 +25,7 @@
 require 5;
 use strict;
 
-Test::NoDebugLeftOn->Test_More(verbose => 1);
+Test::NoDebugLeftOn->Test_More(verbose => 0);
 exit 0;
 
 
@@ -78,7 +78,7 @@ sub check {
       # only a DEBUG=> non-zero number is bad, so an expression can copy a
       # debug from another package
       if (/(DEBUG\s*=>\s*[1-9][0-9]*)/
-          || /^[ \t]*((use|no) Smart::Comments)/
+          || /^[ \t]*((use|no) (Smart|Devel)::Comments)/
           || /^[ \t]*(use lib\b.*devel.*)/
          ) {
         print STDERR "\n$filename:$.: leftover: $_\n";

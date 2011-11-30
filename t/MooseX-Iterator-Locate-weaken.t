@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2010 Kevin Ryde
+# Copyright 2010, 2011 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -32,13 +32,14 @@ BEGIN {
   # version 3.002 for "tracked_types"
   eval "use Test::Weaken 3.002; 1"
     or plan skip_all => "due to Test::Weaken 3.002 not available -- $@";
+
+  eval "use Test::Weaken::ExtraBits; 1"
+    or plan skip_all => "due to Test::Weaken::ExtraBits not available -- $@";
 }
 
 use lib 't';
 use MyTestHelpers;
 BEGIN { MyTestHelpers::nowarnings() }
-
-use Test::Weaken::ExtraBits;
 
 plan tests => 3;
 diag ("Test::Weaken version ", Test::Weaken->VERSION);

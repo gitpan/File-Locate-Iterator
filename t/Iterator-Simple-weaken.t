@@ -34,13 +34,16 @@ BEGIN {
     or plan skip_all => "due to Test::Weaken 3.002 not available -- $@";
 }
 
+BEGIN {
+  eval "use Test::Weaken::ExtraBits; 1"
+    or plan skip_all => "due to Test::Weaken::ExtraBits not available -- $@";
+}
+
 use lib 't';
 use MyTestHelpers;
 # this is after Iterator::Simple load since 0.05 does an import of
 # UNIVERSAL.pm 'isa', which perl 5.12.0 spams about to warn()
 BEGIN { MyTestHelpers::nowarnings() }
-
-use Test::Weaken::ExtraBits;
 
 plan tests => 3;
 diag ("Test::Weaken version ", Test::Weaken->VERSION);

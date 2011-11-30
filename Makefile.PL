@@ -52,16 +52,15 @@ If you don't have a compiler or the .xs doesn't work then disable with
 
 
 my %file_map_optional
-  = ('File::Map'=> '0.24',   # version 0.24 for no prototypes
+  = ('File::Map'=> '0.38',   # version 0.38 for taint
      'PerlIO::Layers' => 0,  # for FileMap bits, required by File::Map too
     );
 my %file_map_deps
   = ('Scalar::Util' => 0, # for FileMap bits
-     'Taint::Util'     => 0, # for FileMap bits
     );
 
 MyMakeMakerExtras::WriteMakefile
-  (NAME         => 'File::Locate::Iterator',
+  (NAME         => 'File-Locate-Iterator',
    ABSTRACT     => 'Read "locate" database file with an iterator.',
    VERSION_FROM => 'lib/File/Locate/Iterator.pm',
    AUTHOR       => 'Kevin Ryde <user42@zip.com.au>',
@@ -70,7 +69,7 @@ MyMakeMakerExtras::WriteMakefile
    PREREQ_PM    => { 'constant::defer' => 0,
                      'File::FnMatch'   => 0,
                      'Test::More'      => 0, # for tests only
-                     %file_map_deps
+                     %file_map_deps,
                    },
    MIN_PERL_VERSION => '5.006',
 
@@ -85,7 +84,7 @@ MyMakeMakerExtras::WriteMakefile
        'http://user42.tuxfamily.org/file-locate-iterator/index.html',
      },
      recommends =>
-     { %file_map_optional
+     { %file_map_optional,
      },
      optional_features =>
      { maximum_examples =>
@@ -105,7 +104,7 @@ MyMakeMakerExtras::WriteMakefile
        },
        maximum_tests =>
        { description => 'Have "make test" do as much as possible.',
-         requires => { 'Taint::Util' => 0,
+         requires => { 'Taint::Util' => 0,  # for taint testing
                        # version 3.002 for "tracked_types"
                        'Test::Weaken' => '3.002',
                      },
@@ -113,6 +112,7 @@ MyMakeMakerExtras::WriteMakefile
        maximum_devel =>
        { description => 'Stuff used variously for development.',
          requires => { %file_map_optional,
+                       'Taint::Util'     => 0, # for FileMap bits
                        'Devel::TimeThis' => 0,
                        'File::Locate' => 0,
                        'IO::String' => 0,

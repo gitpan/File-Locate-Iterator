@@ -25,7 +25,6 @@ use Test::More;
 
 use lib 't';
 use MyTestHelpers;
-use Test::Weaken::ExtraBits;
 BEGIN { MyTestHelpers::nowarnings() }
 
 BEGIN {
@@ -35,6 +34,9 @@ BEGIN {
   # version 3.002 for "tracked_types"
   eval "use Test::Weaken 3.002; 1"
     or plan skip_all => "due to Test::Weaken 3.002 not available -- $@";
+
+  eval "use Test::Weaken::ExtraBits; 1"
+    or plan skip_all => "due to Test::Weaken::ExtraBits not available -- $@";
 
   plan tests => 3;
 }

@@ -20,12 +20,11 @@
 package Iterator::Locate;
 use 5.005;
 use strict;
-use warnings;
 use File::Locate::Iterator;
 use base 'Iterator';
 use vars qw($VERSION);
 
-$VERSION = 20;
+$VERSION = 21;
 
 sub new {
   my $class = shift;
@@ -80,7 +79,7 @@ simple complete program.
 
 =over 4
 
-=item C<< $it = Iterator::Locate->new (key=>value,...) >>
+=item C<$it = Iterator::Locate-E<gt>new (key=E<gt>value,...)>
 
 Create and return a new C<Iterator::Locate> object.  Optional key/value
 arguments are passed to C<File::Locate::Iterator-E<gt>new>.

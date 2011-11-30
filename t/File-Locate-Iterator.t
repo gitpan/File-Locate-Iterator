@@ -20,7 +20,7 @@
 use 5.006;
 use strict;
 use warnings;
-use Test::More tests => 123;
+use Test::More tests => 133;
 
 use lib 't';
 use MyTestHelpers;
@@ -31,8 +31,9 @@ use File::Locate::Iterator;
 # uncomment this to run the ### lines
 #use Devel::Comments;
 
+
 {
-  my $want_version = 20;
+  my $want_version = 21;
   is ($File::Locate::Iterator::VERSION, $want_version, 'VERSION variable');
   is (File::Locate::Iterator->VERSION,  $want_version, 'VERSION class method');
 
@@ -471,6 +472,36 @@ SKIP: {
   }
 }
 
+{
+  package MyTieScalarDb;
+  sub TIESCALAR {
+    my ($class) = @_;
+    return bless {}, $class;
+  }
+  sub FETCH {
+    Test::More::diag("MyTieScalarDb FETCH");
+    return "\0LOCATE02\0\0/hello\0\006/world\0";
+  }
+}
+{
+  my $str;
+  tie $str, 'MyTieScalarDb';
+  my $it = File::Locate::Iterator->new (database_str_ref => \$str);
+
+  is ($it->next, '/hello',       'database_str_ref from tied');
+  is ($it->next, '/hello/world', 'database_str_ref from tied');
+  is ($it->next, undef,          'database_str_ref from tied');
+}
+{
+  my $str;
+  tie $str, 'MyTieScalarDb';
+  my $it = File::Locate::Iterator->new (database_str => $str);
+  is ($it->next, '/hello',       'database_str from tied');
+  is ($it->next, '/hello/world', 'database_str from tied');
+  is ($it->next, undef,          'database_str from tied');
+}
+
+
 #------------------------------------------------------------------------------
 # suffix
 
@@ -506,6 +537,26 @@ SKIP: {
   is ($it->next, undef);
 }
 
+{
+  package MyTieScalarStarPl;
+  sub TIESCALAR {
+    my ($class) = @_;
+    return bless {}, $class;
+  }
+  sub FETCH {
+    return '*.pl';
+  }
+}
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my $glob;
+  tie $glob, 'MyTieScalarStarPl';
+  my $it = File::Locate::Iterator->new (database_str => $str,
+                                        glob => $glob);
+  is ($it->next, '/hello/world.pl');
+  is ($it->next, undef);
+}
+
 #------------------------------------------------------------------------------
 # globs
 
@@ -513,6 +564,29 @@ SKIP: {
   my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
   my $it = File::Locate::Iterator->new (database_str => $str,
                                         globs => ['*.pm','*.pl']);
+  is ($it->next, '/hello/world.pl');
+  is ($it->next, undef);
+}
+
+{
+  package MyTieArrayStarPl;
+  sub TIEARRAY {
+    my ($class) = @_;
+    return bless {}, $class;
+  }
+  sub FETCH {
+    return '*.pl';
+  }
+  sub FETCHSIZE {
+    return 1;
+  }
+}
+{
+  my $str = "\0LOCATE02\0\0/hello.c\0\006/world.pl\0";
+  my @array;
+  tie @array, 'MyTieArrayStarPl';
+  my $it = File::Locate::Iterator->new (database_str => $str,
+                                        globs => \@array);
   is ($it->next, '/hello/world.pl');
   is ($it->next, undef);
 }

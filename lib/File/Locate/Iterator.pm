@@ -26,7 +26,7 @@ use Carp;
 use DynaLoader;
 our @ISA = ('DynaLoader');
 
-our $VERSION = 20;
+our $VERSION = 21;
 
 # uncomment this to run the ### lines
 #use Devel::Comments;
@@ -469,7 +469,7 @@ sub _current {
 1;
 __END__
 
-=for stopwords filename filenames filesystem slocate filehandle arrayref mmap mmaps seekable PerlIO mmapped XSUB coroutining fd Findutils Ryde wildcard charset wordsize wildcards
+=for stopwords filename filenames filesystem slocate filehandle arrayref mmap mmaps seekable PerlIO mmapped XSUB coroutining fd Findutils Ryde wildcard charset wordsize wildcards Taintedness taintedness untaint ie
 
 =head1 NAME
 
@@ -528,7 +528,7 @@ the mmaps across all threads, but won't reveal them.
 
 =head2 Taint Mode
 
-In taint mode (see L<perlsec/Taint Mode>) entries from a file or file handle
+In taint mode (see L<perlsec/Taint mode>) entries from a file or file handle
 are always tainted, the same as other file input.  Taintedness of a
 C<database_str> content string propagates to the entries.
 
@@ -538,7 +538,7 @@ they depend or may depend on the data back from when the input was tainted.
 A C<rewind()> will reset the taintedness though.
 
 For reference, taint mode is only a small slowdown for the XS iterator code,
-and usually (it seems) only a little more for the pure perl.
+and usually (it seems) only a little more for the pure Perl.
 
 =head2 Other Notes
 
@@ -580,7 +580,7 @@ the C<default_database_file()> below.
 
 A filehandle is read with the usual C<PerlIO> so it can use layers and come
 from various sources, but it should be in binary mode (see
-L<perlfunc/binmode> and L<perlio/:raw>).
+L<perlfunc/binmode> and L<PerlIO/:raw>).
 
 =item C<database_str> (string)
 
@@ -591,12 +591,16 @@ The database contents to read in the form of a byte string.
     $it = File::Locate::Iterator->new
       (database_str => "\0LOCATE02\0\0/hello\0\006/world\0");
 
-A C<database_str> ends up copied into the iterator.  C<database_str_ref> is
-a scalar ref to the string and is not copied.
+The string ends up copied into the iterator, or C<database_str_ref> can be
+used to have it look into a given scalar without copying,
 
     my $str = "\0LOCATE02\0\0/hello\0\006/world\0";
     $it = File::Locate::Iterator->new
-      (database_str_ref => \$str);
+            (database_str_ref => \$str);
+
+For C<database_str_ref> if the originating scalar is tied or has other magic
+that that ends up re-run for each access, in the usual way.  That might be a
+good thing, or you might prefer the copying of C<database_str> in that case.
 
 =item C<suffix> (string)
 
@@ -634,9 +638,9 @@ for its strings and patterns.
 
 Whether to use C<mmap> to access the database.  This is fast and
 resource-efficient when available.  To use mmap you must have the
-C<File::Map> module, the file must fit in available address space, and for a
-C<database_fh> handle there mustn't be any transforming C<PerlIO> layers.
-The C<use_mmap> choices are
+C<File::Map> module (version 0.38 or higher), the file must fit in available
+address space, and for a C<database_fh> handle there mustn't be any
+transforming C<PerlIO> layers.  The C<use_mmap> choices are
 
     undef           \
     "default"       | use mmap if sensible
