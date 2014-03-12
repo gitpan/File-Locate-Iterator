@@ -1,4 +1,4 @@
-Copyright 2009, 2010, 2011 Kevin Ryde
+Copyright 2009, 2010, 2011, 2014 Kevin Ryde
 
 This file is part of File-Locate-Iterator.
 
@@ -15,6 +15,9 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License along
 with File-Locate-Iterator.  If not, see <http://www.gnu.org/licenses/>.
 
+
+Version 22, March 2014
+    - workaround for Moose 2.12 incompatible change to its enum definitions
 
 Version 21, August 2011
     - let File::Map 0.38 do tainting when applicable

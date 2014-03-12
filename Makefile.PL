@@ -1,6 +1,6 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
-# Copyright 2009, 2010, 2011 Kevin Ryde
+# Copyright 2009, 2010, 2011, 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -21,8 +21,6 @@ use 5.006;
 use strict;
 use warnings;
 use ExtUtils::MakeMaker;
-use lib 'inc';
-use MyMakeMakerExtras;
 
 
 # Crib: only print to STDERR so as not to upset "Makefile.PL PREREQ_PRINT=1"
@@ -41,13 +39,13 @@ if (! $want_xs) {
 #
 if ($want_xs && $] < 5.010) {
   print STDERR "XS skipped for perl $[ (believe need 5.010 for SvRX)\n";
-  $want_xs = 0
+  $want_xs = 0;
 }
 if ($want_xs) {
   print STDERR "XS enabled by default.
 If you don't have a compiler or the .xs doesn't work then disable with
     perl Makefile.PL MY_WITHOUT_XS=1
-"
+";
 }
 
 
@@ -59,12 +57,12 @@ my %file_map_deps
   = ('Scalar::Util' => 0, # for FileMap bits
     );
 
-MyMakeMakerExtras::WriteMakefile
+WriteMakefile
   (NAME         => 'File-Locate-Iterator',
    ABSTRACT     => 'Read "locate" database file with an iterator.',
    VERSION_FROM => 'lib/File/Locate/Iterator.pm',
    AUTHOR       => 'Kevin Ryde <user42@zip.com.au>',
-   LICENSE      => 'gpl',
+   LICENSE      => 'gpl_3',
    SIGN         => 1,
    PREREQ_PM    => { 'constant::defer' => 0,
                      'File::FnMatch'   => 0,
@@ -80,11 +78,15 @@ MyMakeMakerExtras::WriteMakefile
 
    META_MERGE =>
    { resources =>
-     { homepage =>
-       'http://user42.tuxfamily.org/file-locate-iterator/index.html',
+     { homepage => 'http://user42.tuxfamily.org/file-locate-iterator/index.html',
+       license  => 'http://www.gnu.org/licenses/gpl.html',
      },
+     no_index => { directory=>['devel'] },
+
      recommends =>
      { %file_map_optional,
+       # version 0.06 fixes UNIVERSAL::isa() import
+       'Iterator::Simple' => 0.06,
      },
      optional_features =>
      { maximum_examples =>
@@ -109,31 +111,33 @@ MyMakeMakerExtras::WriteMakefile
                        'Test::Weaken' => '3.002',
                      },
        },
-       maximum_devel =>
-       { description => 'Stuff used variously for development.',
-         requires => { %file_map_optional,
-                       'Taint::Util'     => 0, # for FileMap bits
-                       'Devel::TimeThis' => 0,
-                       'File::Locate' => 0,
-                       'IO::String' => 0,
-                       'Perl6::Slurp' => 0,
-                       'Scalar::Util' => 0,
-                       'Text::Glob' => 0,
-                       'PerlIO' => 0,
-                       'Sys::Mmap' => 0,
-                     },
-       },
      },
    },
   );
 
-#------------------------------------------------------------------------------
+# maximum_devel =>
+# { description => 'Stuff used variously for development.',
+#   requires => { %file_map_optional,
+#                 'Taint::Util'     => 0, # for FileMap bits
+#                 'Devel::TimeThis' => 0,
+#                 'File::Locate' => 0,
+#                 'IO::String' => 0,
+#                 'Perl6::Slurp' => 0,
+#                 'Scalar::Util' => 0,
+#                 'Text::Glob' => 0,
+#                 'PerlIO' => 0,
+#                 'Sys::Mmap' => 0,
+#               },
+# },
 
-sub MY::postamble {
-  my ($makemaker) = @_;
-  return MyMakeMakerExtras::postamble ($makemaker) . <<'HERE';
+{
+  package MY;
+  sub MY::postamble {
+    my ($makemaker) = @_;
+    return <<'HERE';
 
 t/samp.locatedb: t/samp.zeros
 	/usr/lib/locate/frcode -0 <t/samp.zeros >t/samp.locatedb
 HERE
+  }
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2009, 2010, 2011 Kevin Ryde
+# Copyright 2009, 2010, 2011, 2014 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -20,6 +20,8 @@
 use 5.006;
 use strict;
 use warnings;
+use FindBin;
+use File::Spec;
 use Test::More;
 
 use lib 't';
@@ -37,7 +39,7 @@ diag "File::Map version ",File::Map->VERSION;
 plan tests => 14;
 
 use_ok ('File::Locate::Iterator::FileMap');
-my $want_version = 21;
+my $want_version = 22;
 is ($File::Locate::Iterator::FileMap::VERSION, $want_version,
     'VERSION variable');
 is (File::Locate::Iterator::FileMap->VERSION, $want_version,
@@ -49,10 +51,13 @@ is (File::Locate::Iterator::FileMap->VERSION, $want_version,
       "VERSION class check $check_version");
 }
 
-require FindBin;
-require File::Spec;
-diag "FindBin $FindBin::Bin"; # don't let it seem used just once
+# uncomment this to run the ### lines
+# use Smart::Comments;
+
+# $FindBin::Bin is tainted, it seems.
+# Untaint $samp_locatedb so it can be opened.
 my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
+$samp_locatedb =~ /(.*)/ and $samp_locatedb = $1;  # untaint
 
 #-----------------------------------------------------------------------------
 # _have_mmap_layer()
@@ -74,6 +79,7 @@ my $samp_locatedb = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
 #
 my $have_PerlIO = eval { require PerlIO; };
 if (! $have_PerlIO) { diag "PerlIO module not available -- $@"; }
+### $have_PerlIO
 
 SKIP: {
   $have_PerlIO
@@ -83,13 +89,15 @@ SKIP: {
   my $nosuchlayer;
   do {
     local $SIG{'__WARN__'} = sub {
+      ### warn handler: @_
       if ($_[0] =~ /Unknown PerlIO layer/) {
         $nosuchlayer = 1;
       } else {
         warn $_[0];
       }
     };
-    open $fh, '<:mmap', $samp_locatedb
+    ### open: $samp_locatedb
+    open $fh, '<:mmap', $samp_locatedb;
   } or skip "Cannot open $samp_locatedb with mmap: $!", 1;
   if ($nosuchlayer) {
     skip "No :mmap layer available", 1;

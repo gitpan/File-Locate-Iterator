@@ -1,4 +1,4 @@
-# Copyright 2010, 2011 Kevin Ryde
+# Copyright 2010, 2011, 2014 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -27,7 +27,7 @@ extends
   'Moose::Object'; # does() and stuff
 with 'MooseX::Iterator::Role';
 
-our $VERSION = 21;
+our $VERSION = 22;
 
 # uncomment this to run the ### lines
 #use Devel::Comments;
@@ -121,13 +121,13 @@ has 'regexps'
       documentation => 'An array of regexps, any of which to match',
      );
 
-# this enum not documented, is this sort of name about right?
-# enum is string choices, so Maybe[] to allow undef
-enum 'File::Locate::Iterator::UseMMAP'
-  => qw(default if_sensible if_possible 0 1);
+enum 'MooseX::Iterator::Locate::UseMmap'
+  => [ 'default', 'if_sensible', 'if_possible', '0', '1' ];
+
+# enum is string choices, so Maybe[] to allow undef too
 has 'use_mmap'
   => (is      => 'bare',
-      isa     => 'Maybe[File::Locate::Iterator::UseMMAP]',
+      isa     => 'Maybe[MooseX::Iterator::Locate::UseMmap]',
       default => 'default',
       lazy    => 1,
       documentation => 'Whether to use mmap() for the database (with File::Map)',
@@ -208,12 +208,12 @@ and has roles
 
 =head1 DESCRIPTION
 
-C<MooseX::Iterator::Locate> reads a "locate" database file in
-C<MooseX::Iterator> style.  It's implemented as a front-end to
-C<File::Locate::Iterator>.
+C<MooseX::Iterator::Locate> reads a "locate" database file in the style of
+L<MooseX::Iterator>.  It's implemented as a front-end to
+L<File::Locate::Iterator>.
 
 See F<examples/moosex-iterator.pl> in the File-Locate-Iterator sources for a
-simple complete program.
+complete sample program.
 
 =head1 FUNCTIONS
 
@@ -227,24 +227,24 @@ key/value pairs are passed to C<< File::Locate::Iterator->new >>.
     my $it = MooseX::Iterator::Locate->new
                (suffixes => ['.pm', '.pl']);
 
-=item C<< $entry = $it->next >>
+=item C<< $entry = $it->next() >>
 
 Return the next entry from the database.  The first call is the first entry.
 
-=item C<< $entry = $it->peek >>
+=item C<< $entry = $it->peek() >>
 
 Return the next entry from the database, but don't advance the iterator
 position.  This is what C<$it-E<gt>next> would return.
 
 (This is not the same as C<peek> in the base MooseX::Iterator version 0.11,
-it gives the second next item.  Believe that's a mistake there, though the
-intention will be to follow what the base does when resolved.)
+which gives the second next item.  Believe that's a mistake there, though
+the intention will be to follow what the base does when resolved.)
 
-=item C<< $bool = $it->has_next >>
+=item C<< $bool = $it->has_next() >>
 
 Return true if there's a next entry available.
 
-=item C<< $it->reset >>
+=item C<< $it->reset() >>
 
 Move C<$it> back to the start of the database again.  The next call to
 C<$it-E<gt>next> gives the first entry again.
@@ -269,11 +269,12 @@ The various parameters accepted by C<new> are attributes.  They're all
     globs             ArrayRef[Str]
     regexp            Str | RegexpRef
     regexps           ArrayRef[Str|RegexpRef]
-    use_mmap          enum default, if_sensible, if_possible, 0, 1
+    use_mmap          enum (type MooseX::Iterator::Locate::UseMmap)
+                        "default", "if_sensible", "if_possible", "0", "1"
 
-The default in the C<database_file> attribute is per
-C<< File::Locate::Iterator->default_database_file >>.  (It's a coderef type
-since C<default_database_file> looks at C<%ENV>.)
+C<database_file> default is
+C<< File::Locate::Iterator->default_database_file() >>, done as a coderef
+default since C<default_database_file()> looks at C<%ENV>.
 
 =head1 SEE ALSO
 
@@ -287,7 +288,7 @@ http://user42.tuxfamily.org/file-locate-iterator/index.html
 
 =head1 COPYRIGHT
 
-Copyright 2010, 2011 Kevin Ryde
+Copyright 2010, 2011, 2014 Kevin Ryde
 
 File-Locate-Iterator is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published by

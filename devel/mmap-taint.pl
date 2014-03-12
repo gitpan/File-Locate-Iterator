@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2011 Kevin Ryde.
+# Copyright 2011, 2014 Kevin Ryde.
 #
 # This file is part of File-Locate-Iterator.
 #
@@ -20,11 +20,38 @@
 
 use 5.005;
 use strict;
+use FindBin;
 use Devel::Peek;
 # use File::Map;
 
 # uncomment this to run the ### lines
-use Devel::Comments;
+use Smart::Comments;
+
+{
+  # :mmap
+  my $filename = '/etc/motd.tail';
+  $filename = File::Spec->catfile ($FindBin::Bin, 'samp.locatedb');
+  open my $fh, '<:mmap', $filename;
+  exit 0;
+}
+
+{
+  require File::Map;
+  require Taint::Util;
+  my $str;
+  Taint::Util::taint($str);
+  my $filename = '/etc/motd.tail';
+  File::Map::map_file ($str, $filename);
+  { my $t = Taint::Util::tainted($str);
+    ### $t
+  }
+  Taint::Util::taint($str);
+  { my $t = Taint::Util::tainted($str);
+    ### $t
+  }
+  Dump($str);
+  exit 0;
+}
 
 {
   # my $t;
@@ -37,24 +64,6 @@ use Devel::Comments;
   my @stat = stat($fh);
   ### @stat
 
-  exit 0;
-}
-
-{
-  require File::Map;
-  require Taint::Util;
-  my $str;
-  Taint::Util::taint($str);
-  my $filename = '/etc/motd';
-  File::Map::map_file ($str, $filename);
-  { my $t = Taint::Util::tainted($str);
-    ### $t
-  }
-  Taint::Util::taint($str);
-  { my $t = Taint::Util::tainted($str);
-    ### $t
-  }
-  Dump($str);
   exit 0;
 }
 

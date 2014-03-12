@@ -1,6 +1,6 @@
 # MyTestHelpers.pm -- my shared test script helpers
 
-# Copyright 2008, 2009, 2010, 2011 Kevin Ryde
+# Copyright 2008, 2009, 2010, 2011, 2012 Kevin Ryde
 
 # MyTestHelpers.pm is shared by several distributions.
 #
@@ -45,10 +45,15 @@ sub DEBUG { 0 }
   my $stacktraces;
   my $stacktraces_count = 0;
   sub nowarnings_handler {
-    $warning_count++;
-    if ($stacktraces_count < 3 && eval { require Devel::StackTrace }) {
-      $stacktraces_count++;
-      $stacktraces .= "\n" . Devel::StackTrace->new->as_string() . "\n";
+    my ($msg) = @_;
+    # don't error out for cpan alpha version number warnings
+    unless (defined $msg
+            && $msg =~ /^Argument "[0-9._]+" isn't numeric in numeric gt/) {
+      $warning_count++;
+      if ($stacktraces_count < 3 && eval { require Devel::StackTrace }) {
+        $stacktraces_count++;
+        $stacktraces .= "\n" . Devel::StackTrace->new->as_string() . "\n";
+      }
     }
     warn @_;
   }
@@ -70,7 +75,7 @@ sub DEBUG { 0 }
 }
 
 sub diag {
-  if (eval { Test::More->can('diag') }) {
+  if (do { local $@; eval { Test::More->can('diag') }}) {
     Test::More::diag (@_);
   } else {
     my $msg = join('', map {defined($_)?$_:'[undef]'} @_)."\n";

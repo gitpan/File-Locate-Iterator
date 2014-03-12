@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2009, 2010, 2011 Kevin Ryde
+# Copyright 2009, 2010, 2011, 2014 Kevin Ryde
 
 # This file is part of File-Locate-Iterator.
 #
@@ -36,7 +36,7 @@ BEGIN { MyTestHelpers::nowarnings() }
 plan tests => 19;
 require Iterator::Simple::Locate;
 
-my $want_version = 21;
+my $want_version = 22;
 is ($Iterator::Simple::Locate::VERSION, $want_version, 'VERSION variable');
 is (Iterator::Simple::Locate->VERSION,  $want_version, 'VERSION class method');
 { ok (eval { Iterator::Simple::Locate->VERSION($want_version); 1 },

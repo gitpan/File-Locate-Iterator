@@ -47,7 +47,6 @@ examples/mini-locate.pl
 examples/moosex-iterator.pl
 examples/native.pl
 inc/my_pod2html
-inc/MyMakeMakerExtras.pm
 Iterator.xs
 lib/File/Locate/Iterator.pm
 lib/File/Locate/Iterator/FileMap.pm
@@ -92,4 +91,13 @@ xt/0-Test-DistManifest.t
 xt/0-Test-Pod.t
 xt/0-Test-YAML-Meta.t
 xt/1-Test-Synopsis.t
-META.yml                                 Module meta-data (added by MakeMaker)
+xtools/my-check-copyright-years.sh
+xtools/my-check-file-part-of.sh
+xtools/my-check-spelling.sh
+xtools/my-deb.sh
+xtools/my-diff-prev.sh
+xtools/my-manifest.sh
+xtools/my-pc.sh
+xtools/my-wunused.sh
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

@@ -1,4 +1,4 @@
-# Copyright 2009, 2010, 2011 Kevin Ryde.
+# Copyright 2009, 2010, 2011, 2014 Kevin Ryde.
 #
 # This file is part of File-Locate-Iterator.
 #
@@ -24,7 +24,7 @@ use warnings;
 use File::Locate::Iterator;
 use Iterator::Simple;
 
-our $VERSION = 21;
+our $VERSION = 22;
 
 sub new {
   my $class = shift;
@@ -85,7 +85,7 @@ http://user42.tuxfamily.org/file-locate-iterator/index.html
 
 =head1 COPYRIGHT
 
-Copyright 2009, 2010, 2011 Kevin Ryde
+Copyright 2009, 2010, 2011, 2014 Kevin Ryde
 
 File-Locate-Iterator is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published by
