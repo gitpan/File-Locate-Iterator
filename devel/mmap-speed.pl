@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2009, 2010 Kevin Ryde.
+# Copyright 2009, 2010, 2014 Kevin Ryde.
 #
 # This file is part of File-Locate-Iterator.
 #
@@ -78,5 +78,5 @@ sub file_map {
 }
 
 file_map();
-# sys_mmap();
-sys_mmap_raw();
+sys_mmap();
+#sys_mmap_raw();

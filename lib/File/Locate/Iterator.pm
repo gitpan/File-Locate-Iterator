@@ -33,7 +33,7 @@ use Carp;
 use DynaLoader;
 our @ISA = ('DynaLoader');
 
-our $VERSION = 22;
+our $VERSION = 23;
 
 # uncomment this to run the ### lines
 #use Devel::Comments;

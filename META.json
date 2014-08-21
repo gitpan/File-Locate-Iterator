@@ -1,10 +1,10 @@
 {
    "abstract" : "Read \"locate\" database file with an iterator.",
    "author" : [
-      "Kevin Ryde <user42@zip.com.au>"
+      "Kevin Ryde <user42_kevin@yahoo.com.au>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.133380",
+   "generated_by" : "ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.142060",
    "license" : [
       "gpl_3"
    ],
@@ -92,5 +92,5 @@
          "http://www.gnu.org/licenses/gpl.html"
       ]
    },
-   "version" : "22"
+   "version" : "23"
 }

@@ -58,10 +58,10 @@ my %file_map_deps
     );
 
 WriteMakefile
-  (NAME         => 'File-Locate-Iterator',
+  (NAME         => 'File::Locate::Iterator',
    ABSTRACT     => 'Read "locate" database file with an iterator.',
    VERSION_FROM => 'lib/File/Locate/Iterator.pm',
-   AUTHOR       => 'Kevin Ryde <user42@zip.com.au>',
+   AUTHOR       => 'Kevin Ryde <user42_kevin@yahoo.com.au>',
    LICENSE      => 'gpl_3',
    SIGN         => 1,
    PREREQ_PM    => { 'constant::defer' => 0,

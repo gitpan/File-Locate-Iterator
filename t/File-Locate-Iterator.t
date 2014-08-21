@@ -33,7 +33,7 @@ use File::Locate::Iterator;
 
 
 {
-  my $want_version = 22;
+  my $want_version = 23;
   is ($File::Locate::Iterator::VERSION, $want_version, 'VERSION variable');
   is (File::Locate::Iterator->VERSION,  $want_version, 'VERSION class method');
 
